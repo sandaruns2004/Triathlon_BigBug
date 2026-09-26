@@ -11,7 +11,7 @@
 A **responsive web application** that lets a judge complete the **full delivery workflow** across all four roles:
 
 ```
-Dispatcher plans → Loader loads → Driver delivers → Store Manager receives
+Store Manager orders → Dispatcher plans → Loader loads → Driver delivers → Store Manager receives
 ```
 
 ### Hard Requirements
@@ -37,13 +37,14 @@ Dispatcher plans → Loader loads → Driver delivers → Store Manager receives
 | Styling | **Tailwind CSS** | Rapid responsive development, utility-first |
 | Component library | **shadcn/ui** | Accessible, unstyled base components |
 | State management | **Zustand** | Lightweight, works well with Next.js |
-| Real-time | **Socket.IO client** | Live vehicle updates, alerts |
-| Maps | **Leaflet.js** (OpenStreetMap) | Free, works offline |
-| PWA | **next-pwa** | Offline support for driver + loader |
-| Charts | **Recharts** | Capacity gauges, dashboard stats |
+| Real-time | **Socket.IO client** | Live updates, alerts, cross-role events |
+| Maps | **Leaflet.js** (OpenStreetMap) | Free, synchronized with list/table view |
+| PWA | **next-pwa** | Offline support for driver (field connectivity) |
+| Charts | **Recharts** | Capacity bars (weight + volume), dashboard stats |
 | Forms | **React Hook Form + Zod** | Validated inputs |
-| Camera | **react-webcam** | Barcode scanning, photo capture |
-| Barcode | **html5-qrcode** | Scanner for loader |
+| Camera | **react-webcam** | Photo capture (proof of delivery) |
+| Barcode | **html5-qrcode** | Barcode scanner for loader screen |
+| Icons | **Lucide React** | Consistent outline icon family (1.75–2 px stroke) |
 
 ### Backend
 | Layer | Choice | Reason |

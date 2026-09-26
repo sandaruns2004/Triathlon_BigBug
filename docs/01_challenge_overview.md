@@ -2,13 +2,15 @@
 
 ## Business Context
 
-The Datathon challenge is based on a **Sri Lankan FMCG (Fast-Moving Consumer Goods) distribution company** that operates two depots and delivers to retail outlets across multiple districts. The company distributes three brand categories:
+The challenge is based on **Waypoint Group**, a Sri Lankan retail group that operates three brands sharing one distribution network. For the Datathon, the brand names are referred to as Fresh/Style/Tech:
 
-| Brand | Delivery Window | Temperature |
-|---|---|---|
-| **Fresh** | Pre-dawn (03:30–08:00) | Refrigerated (reefer) |
-| **Style** | Daytime (09:00–17:00) | Ambient |
-| **Tech** | Daytime (09:00–17:00) | Ambient |
+| Brand (Datathon name) | Waypoint Brand | Delivery Window | Temperature |
+|---|---|---|---|
+| **Fresh** | Waypoint Fresh (80 outlets) | Pre-dawn (03:30–08:00) | Refrigerated (reefer) |
+| **Style** | Waypoint Style (25 outlets) | Daytime (09:00–17:00) | Ambient |
+| **Tech** | Waypoint Tech (15 outlets) | Daytime (09:00–17:00) | Ambient |
+
+> **Designathon/Hackathon context:** The same company is the basis for the **Waypoint Flow** system being designed and built in Days 1–10. The Datathon data underpins the allocation and prediction logic that the Hackathon must implement.
 
 The company operates from **two depots**:
 - **Peliyagoda** — serves Western and Southern Sri Lanka
