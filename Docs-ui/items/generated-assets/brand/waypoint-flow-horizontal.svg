@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 478 128" role="img" aria-labelledby="title">
+  <title id="title">Waypoint Flow</title>
+  <rect width="128" height="128" rx="30" fill="#146B45"/>
+  <path d="M25 36 45 88 64 54 83 88 103 36" fill="none" stroke="#EAF6EF" stroke-linecap="round" stroke-linejoin="round" stroke-width="13"/>
+  <circle cx="25" cy="36" r="7" fill="#1F8A5B"/><circle cx="103" cy="36" r="7" fill="#1F8A5B"/>
+  <text x="154" y="77" fill="#17221D" font-family="Inter,Arial,sans-serif" font-size="47" font-weight="700" letter-spacing="-1.8">Waypoint Flow</text>
+</svg>
