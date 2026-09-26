@@ -11,6 +11,11 @@
 |---|---|
 | [00_event_overview.md](./00_event_overview.md) | Full event details, timeline, speakers, eligibility |
 | [01_challenge_overview.md](./01_challenge_overview.md) | High-level problem statement and context |
+| **DESIGNATHON** | |
+| [08_designathon_plan.md](./08_designathon_plan.md) | 🎨 Full Designathon plan — personas, screen flows, degradation, style guide |
+| **HACKATHON** | |
+| [09_hackathon_plan.md](./09_hackathon_plan.md) | 💻 Full Hackathon build plan — tech stack, architecture, engine, Docker |
+| **DATATHON** | |
 | [02_task1_delivery_prediction.md](./02_task1_delivery_prediction.md) | Task 1 — Delivery Service Time & Lateness Prediction |
 | [03_task2a_volume_forecasting.md](./03_task2a_volume_forecasting.md) | Task 2A — Weekly Volume Forecasting |
 | [04_task2b_peak_day_allocation.md](./04_task2b_peak_day_allocation.md) | Task 2B — Peak-Day Vehicle Allocation |

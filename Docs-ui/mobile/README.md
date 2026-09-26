@@ -110,6 +110,41 @@ python check_allocation.py "data/Submission Templates/submission_task2b.csv"
 
 ---
 
+## 🎨 Designathon (Day 5 · 29 Sep 2026 · 11:59 PM)
+
+Design one unified system for the **Waypoint** delivery workflow across four roles.
+
+| Deliverable | Detail |
+|---|---|
+| 4 User Personas | Dispatcher, Loader, Driver, Store Manager |
+| Screen flows + rationale | All 4 roles with ≥1 paragraph per screen |
+| Degradation screens | ≥1 failure scenario fully designed |
+| Hi-fi prototype | Figma interactive prototype |
+| Demo video | 3–5 min YouTube (unlisted) |
+| AI disclosure | Required |
+| Submission | `BigBug_Designathon.zip` + Figma URL + YouTube URL |
+
+**Full plan:** [`docs/08_designathon_plan.md`](docs/08_designathon_plan.md)
+
+---
+
+## 💻 Hackathon (Day 10 · 4 Oct 2026 · 11:59 PM)
+
+Build the Waypoint system from the Designathon spec.
+
+| Aspect | Detail |
+|---|---|
+| Stack | Next.js 14 · Node.js · PostgreSQL 15 · Socket.IO · Prisma · Tailwind CSS |
+| Repo | `BigBug_WaypointDelivery` (GitHub monorepo) |
+| Docker | `docker compose up` starts full stack + seeds data |
+| Accounts | 4 seeded accounts (dispatcher / loader / driver / store manager) |
+| Key feature | Allocation engine enforcing all 9 operating constraints |
+| Demo video | 5–8 min YouTube (unlisted) — all 4 roles + architecture |
+
+**Full plan:** [`docs/09_hackathon_plan.md`](docs/09_hackathon_plan.md)
+
+---
+
 ## 🔑 Critical Rules
 
 | Rule | Detail |
