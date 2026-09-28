@@ -575,15 +575,15 @@ BigBug_Designathon.zip
 
 | Item | Done? |
 |---|---|
-| ☐ 4 personas in Figma (grounded in working conditions) | |
-| ☐ All desktop screen flows with rationale paragraph per screen | |
-| ☐ All mobile screen flows with rationale paragraph per screen | |
-| ☐ End-to-end workflow diagram showing role continuity | |
-| ☐ ≥3 degradation screens (Deferral / Shortfall / Offline) designed | |
-| ☐ Design system page (tokens, type, status language, components) | |
-| ☐ Figma prototype interactions linked | |
+| ✅ 4 personas in Figma (grounded in working conditions) | |
+| ✅ All desktop screen flows with rationale paragraph per screen | |
+| ✅ All mobile screen flows with rationale paragraph per screen | |
+| ✅ End-to-end workflow diagram showing role continuity | |
+| ✅ ≥3 degradation screens (Deferral / Shortfall / Offline) designed | |
+| ✅ Design system page (tokens, type, status language, components) | |
+| ✅ Figma prototype interactions linked | |
 | ☐ Demo video 3–5 min, YouTube Unlisted | |
-| ☐ AI Disclosure page in Figma | |
-| ☐ PDF export of all pages | |
+| ✅ AI Disclosure page in Figma | |
+| ✅ PDF export of all pages | |
 | ☐ ZIP: `BigBug_Designathon.zip` | |
 | ☐ Submit form: ZIP + Figma URL + YouTube URL | |
