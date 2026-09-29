@@ -1,0 +1,129 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-wp-canvas text-wp-ink;
+  }
+
+  /* Tabular numerals for times, weights, quantities */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer components {
+  /* ─── Buttons ───────────────────────────────────────────────── */
+  .btn-primary {
+    @apply bg-wp-action text-white font-semibold rounded-card px-4 py-3
+           hover:bg-wp-green transition-colors duration-150
+           focus-visible:outline focus-visible:outline-2 focus-visible:outline-wp-action
+           disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply bg-wp-pale text-wp-green font-semibold rounded-card px-4 py-3
+           hover:bg-green-100 transition-colors duration-150
+           focus-visible:outline focus-visible:outline-2 focus-visible:outline-wp-action
+           disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+
+  .btn-outline {
+    @apply bg-white text-wp-ink border border-wp-border font-semibold rounded-card px-4 py-3
+           hover:bg-wp-canvas transition-colors duration-150
+           focus-visible:outline focus-visible:outline-2 focus-visible:outline-wp-action
+           disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+
+  /* ─── Status Chips (9 states) ───────────────────────────────── */
+  .chip {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold;
+  }
+  .chip-needs-planning  { @apply bg-gray-100 text-gray-600; }
+  .chip-planned         { @apply bg-wp-pale text-wp-green; }
+  .chip-loading         { @apply bg-amber-50 text-amber-700; }
+  .chip-ready-to-depart { @apply bg-emerald-50 text-emerald-700; }
+  .chip-on-route        { @apply bg-wp-pale text-wp-green; }
+  .chip-delivered       { @apply bg-green-50 text-wp-success; }
+  .chip-issue-reported  { @apply bg-amber-50 text-amber-700; }
+  .chip-deferred        { @apply bg-gray-100 text-gray-600; }
+  .chip-offline         { @apply bg-amber-50 text-amber-700; }
+
+  /* ─── Cards ─────────────────────────────────────────────────── */
+  .card {
+    @apply bg-white border border-wp-border rounded-card shadow-card;
+  }
+
+  .card-panel {
+    @apply bg-white border border-wp-border rounded-panel shadow-card;
+  }
+
+  /* ─── Desktop Nav Rail ──────────────────────────────────────── */
+  .nav-rail {
+    @apply w-[220px] flex-shrink-0 bg-white border-r border-wp-border
+           flex flex-col h-screen sticky top-0;
+  }
+
+  .nav-item {
+    @apply flex items-center gap-3 px-4 py-2.5 rounded-[8px] mx-2
+           text-wp-muted text-sm font-medium
+           hover:bg-wp-pale hover:text-wp-green transition-colors;
+  }
+
+  .nav-item-active {
+    @apply bg-wp-pale text-wp-green font-semibold;
+  }
+
+  /* ─── Mobile Bottom Nav ─────────────────────────────────────── */
+  .bottom-nav-btn {
+    @apply flex-1 flex flex-col items-center justify-center gap-1
+           py-2 text-wp-muted text-[10px] font-medium
+           min-h-[56px] transition-colors;
+  }
+
+  .bottom-nav-btn-active {
+    @apply text-wp-green;
+  }
+
+  /* ─── Offline Banner ────────────────────────────────────────── */
+  .offline-banner {
+    @apply bg-amber-50 border-b border-amber-200 text-amber-800
+           px-4 py-2.5 text-sm flex items-center gap-2;
+  }
+
+  /* ─── Form Fields ───────────────────────────────────────────── */
+  .field-label {
+    @apply block text-sm font-semibold text-wp-ink mb-1.5;
+  }
+
+  .field-input {
+    @apply w-full min-h-[48px] px-3 py-2.5 border border-wp-border rounded-card
+           bg-white text-wp-ink text-base
+           focus:outline-none focus:ring-2 focus:ring-wp-action focus:border-transparent
+           placeholder:text-wp-muted;
+  }
+
+  /* ─── Capacity Bars ─────────────────────────────────────────── */
+  .capacity-bar-track {
+    @apply h-1.5 bg-wp-border rounded-full overflow-hidden;
+  }
+
+  .capacity-bar-fill {
+    @apply h-full bg-wp-action rounded-full transition-all;
+  }
+
+  .capacity-bar-fill-warning {
+    @apply bg-amber-400;
+  }
+
+  .capacity-bar-fill-over {
+    @apply bg-red-500;
+  }
+}
