@@ -27,10 +27,37 @@ interface Trip {
 
 export default function RouteMap({ trips = [] }: { trips?: Trip[] }) {
   const [mounted, setMounted] = useState(false);
+  const [vehicleLocations, setVehicleLocations] = useState<Record<string, { lat: number, lng: number }>>({});
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    
+    // Initialize initial locations
+    const initialLocations: Record<string, { lat: number, lng: number }> = {};
+    trips.forEach(t => {
+      if (t.lat && t.lng) initialLocations[t.vehicleId] = { lat: t.lat, lng: t.lng };
+    });
+    setVehicleLocations(initialLocations);
+    
+    // Connect to Socket.IO
+    import("socket.io-client").then(({ io }) => {
+      const socket = io();
+      
+      // Join depot room to hear all vehicle updates for this depot
+      socket.emit("join:depot", "Peliyagoda");
+      
+      socket.on("vehicle:location_update", (data: { vehicleId: string, lat: number, lng: number }) => {
+        setVehicleLocations(prev => ({
+          ...prev,
+          [data.vehicleId]: { lat: data.lat, lng: data.lng }
+        }));
+      });
+      
+      return () => {
+        socket.disconnect();
+      };
+    });
+  }, [trips]);
 
   if (!mounted) return <div className="card-panel bg-wp-pale w-full h-full animate-pulse" />;
 
@@ -54,14 +81,16 @@ export default function RouteMap({ trips = [] }: { trips?: Trip[] }) {
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
-          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         
-        {/* Dynamic markers from Firestore trip data */}
-        {trips
-          .filter((t) => t.lat !== null && t.lng !== null)
-          .map((trip) => (
-            <Marker key={trip.tripId} position={[trip.lat!, trip.lng!]} icon={customIcon}>
+        {/* Dynamic markers from WebSocket / Firestore trip data */}
+        {trips.map((trip) => {
+          const loc = vehicleLocations[trip.vehicleId];
+          if (!loc) return null;
+          
+          return (
+            <Marker key={trip.tripId} position={[loc.lat, loc.lng]} icon={customIcon}>
               <Popup>
                 <div className="p-1">
                   <strong className="text-wp-ink block mb-1">{trip.vehicleId}</strong>
@@ -70,7 +99,8 @@ export default function RouteMap({ trips = [] }: { trips?: Trip[] }) {
                 </div>
               </Popup>
             </Marker>
-          ))}
+          );
+        })}
       </MapContainer>
     </div>
   );
