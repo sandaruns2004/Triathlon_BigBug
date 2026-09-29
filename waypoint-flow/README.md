@@ -1,36 +1,77 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Waypoint Flow - BigBug Team
 
-## Getting Started
+A connected delivery operations platform for Waypoint Group, designed for the Tech-Triathlon 2026 Hackathon.
 
-First, run the development server:
+## Tech Stack
+- Next.js 14 (App Router)
+- Firebase Firestore (NoSQL Database)
+- Socket.IO (Real-time updates)
+- Tailwind CSS & shadcn/ui
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Setup Instructions
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/BigBug/BigBug_WaypointDelivery
+   cd BigBug_WaypointDelivery/waypoint-flow
+   ```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+2. **Environment Variables**
+   Copy `.env.example` to `.env` and fill in your Firebase credentials.
+   ```bash
+   cp .env.example .env
+   ```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+3. **Docker Quick Start (Local)**
+   Run the full stack via Docker Compose:
+   ```bash
+   docker compose up --build
+   ```
+   Wait for `Server ready on http://localhost:3000`.
 
-## Learn More
+## Seeded Accounts
+You can log in to `http://localhost:3000` with any of the following accounts:
 
-To learn more about Next.js, take a look at the following resources:
+| Role | Email | Password |
+|---|---|---|
+| Dispatcher | `dispatcher@waypoint.lk` | `waypoint2026` |
+| Loader | `loader@waypoint.lk` | `waypoint2026` |
+| Driver | `driver@waypoint.lk` | `waypoint2026` |
+| Store Manager | `store@waypoint.lk` | `waypoint2026` |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Judge Walkthrough (45 Steps)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Store Manager Flow
+1. Login: `store@waypoint.lk` / `waypoint2026`
+2. See Store Manager Home.
+3. Tap "New order" → choose delivery date → add items → Review → Submit.
+4. See order status: "Submitted — awaiting plan".
 
-## Deploy on Vercel
+### Dispatcher Flow
+5. New tab: `dispatcher@waypoint.lk` / `waypoint2026`
+6. See Daily Operations Overview with morning health strip.
+7. Click "Open plan builder".
+8. Click "Auto-suggest" to allocate orders to trips.
+9. See deferred orders in the bottom impact tray.
+10. Click a deferred order → select reason → "Confirm deferral".
+11. Click "Publish plan".
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Loader Flow
+12. New tab: `loader@waypoint.lk` / `waypoint2026`
+13. Select a vehicle from the board.
+14. Scan barcodes or manually mark items checked.
+15. If an item is missing, click "Report shortfall" and escalate to dispatcher.
+16. Complete remaining items → "Ready to depart".
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Driver Flow
+17. New tab: `driver@waypoint.lk` / `waypoint2026`
+18. Click "Start trip".
+19. Navigate to Stop 1 → "I'm parked" → Complete delivery.
+20. Confirm quantities, signature, and submit.
+21. Toggle airplane mode to simulate offline operation.
+22. Reconnect and visit Sync Centre to upload offline records.
+
+### Store Receipt
+23. Return to `store@waypoint.lk` tab.
+24. Tap "Confirm receipt".
+25. Report discrepancies (if any) and submit.
