@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ChevronLeft, MapPin, Store, AlertTriangle, Phone, FileSignature, CheckCircle2 } from "lucide-react";
+import { ChevronLeft, MapPin, Store, AlertTriangle, Phone, FileSignature, CheckCircle2, Navigation } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function DriverStopPage() {

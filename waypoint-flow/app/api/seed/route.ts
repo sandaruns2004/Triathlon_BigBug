@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
   if (fs.existsSync(csvVehicles)) {
     const rows = parse(fs.readFileSync(csvVehicles, "utf-8"), { columns: true, skip_empty_lines: true });
     const vBatch = db.batch();
-    for (const v of rows) {
+    for (const v of rows as any[]) {
       vBatch.set(db.collection("vehicles").doc(v.vehicle_id), {
         vehicleId:        v.vehicle_id,
         type:             v.type,
@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
     const rows = parse(fs.readFileSync(csvOutlets, "utf-8"), { columns: true, skip_empty_lines: true });
     for (let i = 0; i < rows.length; i += 400) {
       const oBatch = db.batch();
-      for (const o of rows.slice(i, i + 400)) {
+      for (const o of (rows as any[]).slice(i, i + 400)) {
         oBatch.set(db.collection("outlets").doc(o.outlet_id), {
           outletId:          o.outlet_id,
           name:              o.name,
