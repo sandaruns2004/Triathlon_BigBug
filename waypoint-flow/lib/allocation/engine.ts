@@ -137,7 +137,7 @@ export async function allocate(
   const vehicleTrips = new Map<string, Trip[]>();
   vehicles.forEach((v) => vehicleTrips.set(v.vehicleId, []));
 
-  for (const [groupKey, groupOrders] of groups) {
+  for (const [groupKey, groupOrders] of Array.from(groups.entries())) {
     const [brand, district] = groupKey.split(":");
     const budget            = getTimeBudget(brand);
 
