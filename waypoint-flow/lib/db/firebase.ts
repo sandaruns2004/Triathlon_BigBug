@@ -1,31 +1,31 @@
 import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
+import { getAuth } from "firebase-admin/auth";
 
-/**
- * Firebase Admin SDK singleton.
- * Initializes once and reuses across hot-reloads in development.
- * Usage: import { db } from "@/lib/db/firebase";
- */
 function initFirebase() {
   if (getApps().length > 0) return;
-
-  const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n");
-
-  if (!process.env.FIREBASE_PROJECT_ID || !privateKey || !process.env.FIREBASE_CLIENT_EMAIL) {
-    throw new Error(
-      "Missing Firebase environment variables. Check FIREBASE_PROJECT_ID, FIREBASE_PRIVATE_KEY, FIREBASE_CLIENT_EMAIL in .env"
-    );
+  const projectId = process.env.FIREBASE_PROJECT_ID;
+  if (process.env.MOBILE_TEST_MODE === "emulator") {
+    if (process.env.NODE_ENV === "production" || !projectId?.startsWith("demo-") ||
+        !/^127\.0\.0\.1:\d+$/.test(process.env.FIRESTORE_EMULATOR_HOST ?? "") ||
+        !/^127\.0\.0\.1:\d+$/.test(process.env.FIREBASE_AUTH_EMULATOR_HOST ?? "")) {
+      throw new Error("Emulator mode requires a demo project, loopback emulators and development runtime.");
+    }
+    initializeApp({ projectId });
+    return;
   }
-
-  initializeApp({
-    credential: cert({
-      projectId:   process.env.FIREBASE_PROJECT_ID,
-      privateKey,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-    }),
-  });
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n");
+  if (!projectId || !privateKey || !process.env.FIREBASE_CLIENT_EMAIL) throw new Error("Configure server Firebase credentials.");
+  initializeApp({ credential: cert({ projectId, privateKey, clientEmail: process.env.FIREBASE_CLIENT_EMAIL }) });
 }
-
-initFirebase();
-
-export const db = getFirestore();
+export function adminAuth() { initFirebase(); return getAuth(); }
+// Route modules are compiled without operational credentials. Resolve Admin at
+// request time; never embed a service-account key in the Docker build context.
+export const db = new Proxy({} as ReturnType<typeof getFirestore>, {
+  get(_target, property) {
+    initFirebase();
+    const firestore = getFirestore();
+    const value = Reflect.get(firestore, property, firestore);
+    return typeof value === "function" ? value.bind(firestore) : value;
+  },
+});

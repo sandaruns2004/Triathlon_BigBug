@@ -1,0 +1,98 @@
+{
+  "tripId": "FIXTURE-VEH001-T1",
+  "vehicleId": "VEH001",
+  "serviceDate": "2026-09-30",
+  "depot": "Peliyagoda",
+  "district": "Colombo",
+  "finish": "07:30",
+  "driverUserId": "fixture-driver",
+  "brand": "Fresh",
+  "temperature": "reefer",
+  "departure": "04:30",
+  "weightKg": 430,
+  "volumeM3": 3,
+  "assignmentVersion": 1,
+  "releaseVersion": 1,
+  "released": true,
+  "routeRevision": 1,
+  "stops": [
+    {
+      "stopId": "FIXTURE-STOP-01",
+      "orderId": "FIXTURE-ORDER-01",
+      "outletId": "OUT005",
+      "name": "Waypoint Fresh · Colombo receiving bay",
+      "window": "04:00–07:45",
+      "instruction": "Use the rear dock. Call before arrival.",
+      "stopManifestRevision": 1,
+      "stopDeliveryVersion": 0,
+      "lines": [
+        {
+          "lineId": "FIXTURE-LINE-1-A",
+          "productId": "FIXTURE-MILK",
+          "name": "Fresh milk",
+          "quantity": 12,
+          "unit": "case"
+        },
+        {
+          "lineId": "FIXTURE-LINE-1-B",
+          "productId": "FIXTURE-YOGURT",
+          "name": "Yoghurt",
+          "quantity": 8,
+          "unit": "tray"
+        }
+      ]
+    },
+    {
+      "stopId": "FIXTURE-STOP-02",
+      "orderId": "FIXTURE-ORDER-02",
+      "outletId": "OUT006",
+      "name": "Waypoint Fresh · Colombo morning store",
+      "window": "03:00–08:00",
+      "instruction": "Use the marked street receiving space.",
+      "stopManifestRevision": 1,
+      "stopDeliveryVersion": 0,
+      "lines": [
+        {
+          "lineId": "FIXTURE-LINE-2-A",
+          "productId": "FIXTURE-MILK",
+          "name": "Fresh milk",
+          "quantity": 12,
+          "unit": "case"
+        },
+        {
+          "lineId": "FIXTURE-LINE-2-B",
+          "productId": "FIXTURE-YOGURT",
+          "name": "Yoghurt",
+          "quantity": 8,
+          "unit": "tray"
+        }
+      ]
+    },
+    {
+      "stopId": "FIXTURE-STOP-03",
+      "orderId": "FIXTURE-ORDER-03",
+      "outletId": "OUT007",
+      "name": "Waypoint Fresh · Colombo neighbourhood store",
+      "window": "05:30–08:00",
+      "instruction": "Receiving team available from 05:30.",
+      "stopManifestRevision": 1,
+      "stopDeliveryVersion": 0,
+      "lines": [
+        {
+          "lineId": "FIXTURE-LINE-3-A",
+          "productId": "FIXTURE-MILK",
+          "name": "Fresh milk",
+          "quantity": 12,
+          "unit": "case"
+        },
+        {
+          "lineId": "FIXTURE-LINE-3-B",
+          "productId": "FIXTURE-YOGURT",
+          "name": "Yoghurt",
+          "quantity": 8,
+          "unit": "tray"
+        }
+      ]
+    }
+  ]
+}

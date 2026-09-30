@@ -15,7 +15,8 @@ import path from "path";
 export async function POST(req: NextRequest) {
   const { secret } = await req.json().catch(() => ({ secret: null }));
 
-  if (process.env.NODE_ENV !== "development" && secret !== process.env.SEED_SECRET) {
+  if (process.env.MOBILE_TEST_MODE !== "emulator" || !process.env.FIREBASE_PROJECT_ID?.startsWith("demo-") ||
+      !process.env.SEED_SECRET || secret !== process.env.SEED_SECRET) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

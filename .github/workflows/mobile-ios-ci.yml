@@ -1,0 +1,55 @@
+name: Mobile iOS verification
+on:
+  push:
+    paths: ['waypoint-mobile/**', '.github/workflows/mobile-ios-ci.yml']
+  pull_request:
+    paths: ['waypoint-mobile/**', '.github/workflows/mobile-ios-ci.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  ios:
+    runs-on: macos-15
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: waypoint-mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.41.5'
+          cache: true
+      - run: flutter config --no-enable-swift-package-manager
+      - run: flutter pub get
+      - run: python3 scripts/check_ios_configuration.py
+      - run: python3 -m unittest discover -s scripts/tests -p 'test_*.py'
+      - run: dart format --output=none --set-exit-if-changed lib test integration_test
+      - run: flutter analyze
+      - run: flutter test --flavor development
+      - name: Compile all iOS flavors without distribution credentials
+        run: |
+          flutter build ios --simulator --debug --flavor development --dart-define-from-file=config/ios-fixture.json
+          flutter build ios --release --no-codesign --flavor staging --dart-define-from-file=config/ios-staging.example.json
+          flutter build ios --release --no-codesign --flavor production --dart-define-from-file=config/ios-production.example.json
+      - name: Boot isolated iPhone simulator
+        run: |
+          python3 - <<'PY'
+          import json, subprocess, pathlib
+          inventory=json.loads(subprocess.check_output(['xcrun','simctl','list','devices','available','--json']))
+          choices=[d for runtime,devices in inventory['devices'].items() if '.iOS-' in runtime for d in devices if d.get('isAvailable') and d['name'].startswith('iPhone')]
+          if not choices: raise SystemExit('No available iPhone simulator')
+          device=choices[-1]
+          pathlib.Path('build/ios-simulator-id.txt').write_text(device['udid'])
+          if device['state']!='Booted': subprocess.run(['xcrun','simctl','boot',device['udid']],check=True)
+          subprocess.run(['xcrun','simctl','bootstatus',device['udid'],'-b'],check=True)
+          PY
+      - name: Verify actual simulator SQLite and Keychain persistence
+        run: flutter test integration_test/storage_runtime_test.dart -d "$(cat build/ios-simulator-id.txt)" --flavor development --dart-define-from-file=config/ios-fixture.json
+      - name: Restore normal app entry point for simulator artifact
+        run: flutter build ios --simulator --debug --flavor development --dart-define-from-file=config/ios-fixture.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: waypoint-ios-simulator-development
+          path: waypoint-mobile/build/ios/iphonesimulator/Runner.app
+          if-no-files-found: error

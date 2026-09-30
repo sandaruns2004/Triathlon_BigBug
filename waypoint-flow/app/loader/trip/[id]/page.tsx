@@ -6,6 +6,7 @@ import { ChevronLeft, PackageCheck, AlertTriangle, ArrowDownToLine, Loader2 } fr
 import { cn } from "@/lib/utils";
 import { CapacityBar } from "@/components/shared/CapacityBar";
 import { StatusChip } from "@/components/shared/StatusChip";
+import { uploadPhoto } from "@/lib/mobile/browser";
 
 export default function LoaderTripPage() {
   const params = useParams();
@@ -14,6 +15,10 @@ export default function LoaderTripPage() {
   const [stops, setStops] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [shortfallStop, setShortfallStop] = useState<string | null>(null);
+  const [shortfallReason, setShortfallReason] = useState("");
+  const [shortfallPhotos, setShortfallPhotos] = useState<{file:File;id:string}[]>([]);
+  const [message, setMessage] = useState("");
 
   const fetchTripDetails = () => {
     fetch(`/api/loader/trips/${params.id}`)
@@ -24,7 +29,7 @@ export default function LoaderTripPage() {
         setLoading(false);
       })
       .catch(e => {
-        console.error(e);
+        setMessage((e as Error).message);
         setLoading(false);
       });
   };
@@ -36,28 +41,34 @@ export default function LoaderTripPage() {
   const handleScanItem = async (stopId: string) => {
     setActionLoading(`load-${stopId}`);
     try {
-      await fetch(`/api/loader/stops/${stopId}/load`, { method: "PATCH" });
+      const res = await fetch(`/api/loader/stops/${stopId}/load`, { method: "PATCH" });
+      if(!res.ok) throw Error((await res.json()).error);
       fetchTripDetails();
     } catch (e) {
-      console.error(e);
+      setMessage((e as Error).message);
     } finally {
       setActionLoading(null);
     }
   };
 
   const handleReportShortfall = async (stopId: string, outletName: string) => {
-    const detail = prompt(`Report shortfall for ${outletName}. What is missing?`);
-    if (!detail) return;
-
+    setShortfallStop(stopId);setShortfallReason("");setShortfallPhotos([]);
+  };
+  const submitShortfall = async () => {
+    if(!shortfallStop || !shortfallReason.trim() || actionLoading)return;
+    const stopId=shortfallStop,detail=shortfallReason.trim();
     setActionLoading(`shortfall-${stopId}`);
     try {
-      await fetch("/api/exceptions", {
+      const evidenceIds=[];
+      for(const photo of shortfallPhotos)evidenceIds.push(await uploadPhoto(photo.file,photo.id,{tripId:trip.tripId,stopId}));
+      const res=await fetch("/api/exceptions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           type: "shortfall",
           title: "Loading Shortfall",
           detail,
+          evidenceIds,
           vehicleId: trip.vehicleId,
           tripId: trip.tripId,
           stopId,
@@ -65,9 +76,11 @@ export default function LoaderTripPage() {
           depot: trip.depot,
         })
       });
+      if(!res.ok)throw Error((await res.json()).error);
+      setShortfallStop(null);
       fetchTripDetails();
     } catch (e) {
-      console.error(e);
+      setMessage((e as Error).message);
     } finally {
       setActionLoading(null);
     }
@@ -76,11 +89,20 @@ export default function LoaderTripPage() {
   if (loading) return <div className="p-8 text-center">Loading trip data...</div>;
   if (!trip) return <div className="p-8 text-center text-red-600">Trip not found.</div>;
 
-  const allLoaded = stops.every(s => ["loaded", "delivered", "shortfall_reported"].includes(s.status));
+  const allLoaded = trip.released === true && !trip.held;
   const loadedWeight = stops.filter(s => s.status === "loaded" || s.status === "delivered").reduce((sum, s) => sum + (s.expectedKg || 0), 0);
 
   return (
     <div className="p-4 md:p-8 max-w-4xl mx-auto w-full">
+      <p role="status">{message}</p>
+      {shortfallStop && <aside role="dialog" aria-label="Report loading shortfall" className="card-panel p-5 mb-5 space-y-3 bg-amber-50">
+        <h2 className="font-bold">Report shortfall · {shortfallStop}</h2>
+        <p>This holds departure until Dispatcher approves the manifest.</p>
+        <label className="block">Damage or missing goods<textarea maxLength={1000} value={shortfallReason} onChange={e=>setShortfallReason(e.target.value)} className="border p-2 w-full"/></label>
+        <label className="block">Photos (optional, up to three JPEG/PNG, 2 MB each)<input type="file" accept="image/jpeg,image/png" multiple capture="environment" disabled={!!actionLoading} onChange={e=>setShortfallPhotos(Array.from(e.target.files??[]).slice(0,3).map(file=>({file,id:crypto.randomUUID()})))}/></label>
+        <button disabled={!!actionLoading||!shortfallReason.trim()} onClick={submitShortfall} className="btn btn-primary">Submit shortfall and hold</button>
+        <button disabled={!!actionLoading} onClick={()=>setShortfallStop(null)} className="btn">Cancel</button>
+      </aside>}
       <button 
         onClick={() => router.push("/loader")}
         className="text-wp-muted hover:text-wp-ink flex items-center gap-1 mb-6 text-sm font-semibold transition-colors"

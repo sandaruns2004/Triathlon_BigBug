@@ -1,0 +1,7 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Web/native operational access goes through authenticated server services.
+    match /{document=**} { allow read, write: if false; }
+  }
+}

@@ -39,24 +39,6 @@ export default function RouteMap({ trips = [] }: { trips?: Trip[] }) {
     });
     setVehicleLocations(initialLocations);
     
-    // Connect to Socket.IO
-    import("socket.io-client").then(({ io }) => {
-      const socket = io();
-      
-      // Join depot room to hear all vehicle updates for this depot
-      socket.emit("join:depot", "Peliyagoda");
-      
-      socket.on("vehicle:location_update", (data: { vehicleId: string, lat: number, lng: number }) => {
-        setVehicleLocations(prev => ({
-          ...prev,
-          [data.vehicleId]: { lat: data.lat, lng: data.lng }
-        }));
-      });
-      
-      return () => {
-        socket.disconnect();
-      };
-    });
   }, [trips]);
 
   if (!mounted) return <div className="card-panel bg-wp-pale w-full h-full animate-pulse" />;
@@ -64,11 +46,11 @@ export default function RouteMap({ trips = [] }: { trips?: Trip[] }) {
   return (
     <div className="card-panel overflow-hidden w-full h-full flex flex-col relative z-0">
       <div className="p-4 bg-white border-b border-wp-border absolute top-0 left-0 right-0 z-[1000] shadow-sm flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-wp-ink">Live Fleet Map</h2>
+        <h2 className="text-sm font-semibold text-wp-ink">Fleet map · last saved positions</h2>
         <div className="flex gap-2">
           <span className="flex items-center gap-1.5 text-xs text-wp-muted">
             <span className="w-2 h-2 rounded-full bg-wp-green animate-pulse"></span>
-            Live (3 sec)
+            Refresh-based · no continuous GPS
           </span>
         </div>
       </div>

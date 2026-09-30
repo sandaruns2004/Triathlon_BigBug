@@ -1,3 +1,4 @@
+import { businessDate } from "@/lib/mobile/domain";
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth/nextauth";
@@ -19,7 +20,7 @@ export async function GET(req: NextRequest) {
   }
 
   const depot = (session.user as any).depot ?? "Peliyagoda";
-  const today = new Date().toISOString().split("T")[0];
+  const today = businessDate();
 
   // Run all queries in parallel
   // Exceptions: NO orderBy to avoid composite index requirement — sorted in memory

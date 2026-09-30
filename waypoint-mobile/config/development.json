@@ -1,0 +1,1 @@
+{"APP_ENV":"development","APP_MODE":"fixture","API_BASE_URL":"http://10.0.2.2:3000/api/mobile/v1/","SOCKET_URL":"http://10.0.2.2:3000","SOCKET_PATH":"/socket.io","FIREBASE_PROJECT_ID":""}
