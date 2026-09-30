@@ -5,9 +5,10 @@ interface CapacityBarProps {
   used: number;
   total: number;
   unit: string;
+  invertColors?: boolean;
 }
 
-export function CapacityBar({ label, used, total, unit }: CapacityBarProps) {
+export function CapacityBar({ label, used, total, unit, invertColors }: CapacityBarProps) {
   const percentage = Math.min((used / total) * 100, 100);
   
   let fillClass = "bg-wp-action";
