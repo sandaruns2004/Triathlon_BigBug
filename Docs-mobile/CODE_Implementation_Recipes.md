@@ -1,6 +1,10 @@
 # Tricky implementation recipes — Waypoint mobile
 
-Updated: **30 September 2026**. Read alongside the [work list](00__Work_List.md). These examples explain the hard parts of each phase; they do not replace its acceptance checks.
+Updated: **1 October 2026**. Read alongside the [work list](00__Work_List.md). These examples explain the hard parts of each phase; they do not replace its acceptance checks.
+
+## Implemented fixture workflow guard
+
+[Router builders](../waypoint-mobile/lib/app/router.dart) choose [NativeWorkflowPreviewPage](../waypoint-mobile/lib/features/foundation/foundation_pages.dart) before constructing an operational widget in fixture mode. The page explains the native requirement and returns to the appropriate preview root; it never fabricates a verified identity or initializes a sync worker. [Executed regressions](../waypoint-mobile/test/widgets/fixture_route_guard_test.dart) cover all eight affected route paths with operational providers set to throw on access. [Browser evidence](../waypoint-mobile/docs/chrome-page-review.md) records the recheck and local renderer/font setup.
 
 **Implemented** means code exists in `waypoint-mobile/`; verification is recorded separately. Phase 2–6 snippets below now reference implemented source; contract placeholders illustrate IDs rather than runnable fixture requests. Acceptance evidence remains separate.
 
@@ -133,6 +137,8 @@ See [sync failure tests](../waypoint-mobile/test/sync/sync_worker_test.dart) and
 
 ## Phase 5 — Frozen orders and actual receipt quantities
 
+**1 October recovery update:** [source/tests](../waypoint-mobile/test/recovery_regression_test.dart) cover retrying local receipt-write failures with the original UUID, closeout readiness holds, preserving terminal states on scope changes, and editing POD against its original approved-line snapshot. Forms capture the owner/repository before teardown rather than reading Riverpod in `dispose()`. Store drafts now persist unit snapshots and durable change notices for explicit re-review. See [executed evidence](../waypoint-mobile/docs/mobile-review-and-fixes.md).
+
 Implemented: [Store UI](../waypoint-mobile/lib/features/connected/store_pages.dart), [server rules](../waypoint-flow/lib/mobile/service.ts), [evidence viewer](../waypoint-mobile/lib/features/connected/evidence_viewer.dart).
 
 ~~~json
@@ -212,3 +218,6 @@ const deviceSecureStorage = FlutterSecureStorage(
 [Native storage startup](../waypoint-mobile/lib/core/storage/storage_runtime_native.dart) calls the [Swift protection bridge](../waypoint-mobile/ios/Runner/AppDelegate.swift) before SQLite; protection failure has no unprotected fallback. Schemes include the matching Pods/Generated configuration, with ignored Signing.local.xcconfig last for authorized signing overrides.
 
 [IPA preparation](../waypoint-mobile/scripts/prepare_ios_release.py) validates Apple client configuration, explicit production profile, team, expiry and matching certificate; [five validator tests](../waypoint-mobile/scripts/tests/test_ios_release.py) use synthetic inputs. The [protected workflow](../.github/workflows/mobile-ios-release.yml) exports artifacts and cleans temporary signing material; it does not publish to TestFlight/App Store.
+# UI account hierarchy and sync summary — implemented
+
+The reusable `AccountSummaryCard` and framed Store illustration are implemented in [foundation_pages.dart](../waypoint-mobile/lib/features/foundation/foundation_pages.dart). Connected Profile reuses that card in [profile_notifications.dart](../waypoint-mobile/lib/features/connected/profile_notifications.dart). [sync_pages.dart](../waypoint-mobile/lib/features/connected/sync_pages.dart) derives summary counts from actual operation rows while preserving individual review/retry actions. [Verification](../waypoint-mobile/docs/ui-polish-verification.md) records 50 passing tests and the remaining native visual gate.

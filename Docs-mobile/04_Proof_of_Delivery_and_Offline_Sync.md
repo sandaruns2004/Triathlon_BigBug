@@ -5,6 +5,23 @@ Progress is maintained in [00__Work_List.md](00__Work_List.md) under [the reposi
 
 ## Implemented tricky code
 
+### UI polish — 1 October 2026
+
+- [x] Add a Sync Centre summary using actual local operations and saved acknowledgments; apply amber style to real offline connection messages. Existing evidence/conflict controls retained.
+- [ ] Complete updated Android/native offline visual check; [execution record](../waypoint-mobile/docs/ui-polish-verification.md).
+
+Status remains **Implemented — verification pending**; physical recovery/hosted-media gates remain open.
+
+### Review update — 1 October 2026
+
+Status remains **Implemented — verification pending**. [Executed evidence](../waypoint-mobile/docs/mobile-review-and-fixes.md).
+
+- [x] Retry local acknowledgment-write failures with the original UUID rather than rejecting server-accepted work.
+- [x] Retain original delivered lines/units and validate against the draft snapshot after a manifest change.
+- [x] Preserve synced/reviewed terminal states when account scope changes.
+- [x] Verify these recovery paths and safe POD disposal in regression tests.
+- [ ] Complete physical camera/process-kill/storage and hosted-S3 acceptance.
+
 Implemented entry points: [POD](../waypoint-mobile/lib/features/connected/proof_page.dart), [sync worker](../waypoint-mobile/lib/core/sync/sync_worker.dart), [shared server transaction](../waypoint-flow/lib/mobile/service.ts).
 ~~~dart
 await repo.complete(principal, proofId, payload, operation);
@@ -56,7 +73,8 @@ Photo capture may leave a temporary file or an interrupted result; implement rec
 - [x] Maintain per-trip dependency order: trip start before delivery; media finalization before evidence-dependent POD submission; proof before dependent receipt updates.
 - [x] Support `trip_issue` and `trip_closeout` as explicit operation types. Closeout depends on required stop outcomes/issues; one unresolved conflict must remain visible and cannot produce a false completed trip. Breakdown must retain already captured proof for replay/review.
 - [x] Use one sync worker per user/device. Persist leases/recovery state; recover abandoned `uploading`/`submitting` operations after app termination.
-- [x] Retry foreground reconnect, app resume/startup and manual Sync now. Use bounded exponential backoff with jitter; one failed record must not hide other independent successes.
+- [x] Retry foreground reconnect, app resume/startup and manual Sync now with bounded exponential backoff; one failed record must not hide independent successes.
+- [ ] Add randomized jitter to bounded automatic retries.
 - [x] Treat network connectivity as a hint. HTTP reachability/auth/server response decides whether an operation succeeded.
 - [x] Background work is best effort under OS scheduling and battery restrictions. An installed app must still sync through foreground/manual paths when background work never runs.
 

@@ -12,11 +12,19 @@ Flutter 3.41.5 / Dart 3.11.3; Android API 26+; tested SDK 36.1.0 / Java 21. Depe
 flutter pub get
 # UI fixture preview: explicitly no operational identity/upload
 flutter run --flavor development --dart-define-from-file=config/development.json
+# Chrome fixture preview with local rendering assets:
+flutter run -d chrome --dart-define-from-file=config/development.json --no-web-resources-cdn
 # Connected local demo, after backend/emulator setup:
 flutter run -d emulator-5556 --flavor development --dart-define-from-file=config/emulator.json
 ~~~
 
 [Demo setup](docs/demo-walkthrough.md) contains isolated reset/actor/entity instructions. Emulator uses 10.0.2.2 to reach host API/Auth. A physical phone needs a reachable development host/intentional adb reverse mapping or verified HTTPS environment; phone localhost is the phone.
+
+### Why login may not appear
+
+`config/development.json` selects `APP_MODE=fixture`: it shows the labelled design preview and sample-role buttons rather than authenticating. For local Android login, use `config/emulator.json` with the demo backend/Auth emulators running, as shown above. For your real phone, use a connected configuration for the verified reachable backend and Firebase project.
+
+In connected mode a valid saved session opens your role's home screen automatically. Use **Profile → Sign out** to return to login; saved evidence remains on the device. Do not clear app data just to display login. An expired or rejected session returns to login. The browser HTML mockup does not control the Flutter app's authentication.
 
 Copy staging/production example JSON into ignored config files and fill verified PUBLIC Firebase client configuration/API URLs. Never include Admin/AWS/signing secrets. Production refuses fixture/emulator/HTTP settings. Native SDK handles custom-token exchange/ID-token refresh.
 
@@ -42,7 +50,7 @@ flutter build apk --debug --flavor development --dart-define-from-file=config/em
 
 The integration test requires a released isolated fixture, real local API and Auth/Firestore emulators. It clears only its synthetic test users' local records. Never point tests/reset at operational data.
 
-Current normal development artifact: [waypoint-0.1.0-development-20260930.apk](build/releases/waypoint-0.1.0-development-20260930.apk). It was installed/launched on Android emulator; checksum/environment are recorded in [verification](docs/phase-2-7-verification.md). Debug signing and emulator HTTP configuration are not production release signing.
+Current normal development artifact: [waypoint-0.1.0-ui-polish-20261001.apk](build/releases/waypoint-0.1.0-ui-polish-20261001.apk). It includes the review and UI fixes, builds successfully and was installed/launched with connected login rendering verified on Android emulator. Checksum, browser checks and remaining native visual acceptance are recorded in [UI verification](docs/ui-polish-verification.md). Historical journey results are recorded in [verification](docs/phase-2-7-verification.md). Debug signing and emulator HTTP configuration are not production release signing.
 
 Application IDs: development lk.waypoint.waypoint_mobile.dev; staging lk.waypoint.waypoint_mobile.staging; production lk.waypoint.waypoint_mobile. Version 0.1.0+1.
 

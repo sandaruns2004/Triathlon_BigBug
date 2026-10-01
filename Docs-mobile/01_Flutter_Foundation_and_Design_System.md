@@ -1,9 +1,30 @@
 # Phase 1 — Flutter foundation and design system
 
+## Browser review — 1 October 2026
+
+- [x] Compare the current preview with both HTML mobile references; [visual review](REVIEW_UI_Visual.md) records usable basics and remaining illustration/Profile/Home polish gaps.
+- [x] Improve Store illustration framing/Home summary/activity and fixture/connected Profile hierarchy; 50 tests/clean analysis and browser visual recheck recorded in [UI evidence](../waypoint-mobile/docs/ui-polish-verification.md).
+- [ ] Complete native degradation-screen visual acceptance; progress recorded separately in the UI evidence.
+
+- [x] Inspect shared fixture navigation, manifest/dialogs, draft warning and design catalogue in the running Flutter browser preview; [page-by-page evidence](../waypoint-mobile/docs/chrome-page-review.md).
+- [x] Fix preview findings B01–B05: fixture workflow guards, single-line Updates navigation, current copy, correctly named list CTA and Waypoint metadata; verify with 50 tests/clean analysis and browser recheck.
+- [x] Bundle local web renderer configuration and licensed fallback font after reproducing blocked CDN startup; corrected preview renders without captured console errors.
+
+Status remains **Implemented — verification pending**. The browser review does not certify native operational storage or phone acceptance.
+
 **Execution status (30 September 2026): Implemented — verification pending.** Flutter shell, repositories, encrypted payload/media storage, migrations, sync lease and CI added. Native/device acceptance evidence is tracked separately.
 Progress is maintained in [00__Work_List.md](00__Work_List.md) under [the repository rule](../AGENTS.md).
 
 ## Tricky code starting point
+
+### Review update — 1 October 2026
+
+Status remains **Implemented — verification pending**. [Executed review evidence](../waypoint-mobile/docs/mobile-review-and-fixes.md).
+
+- [x] Block new/restored connected sessions when durable storage cannot open, with an explicit sign-in error.
+- [x] Capture form repositories before disposal, retaining draft saves without reading a disposed provider reference.
+- [x] Verify storage-unavailable sign-in and draft/navigation teardown through regression tests.
+- [ ] Complete the existing physical-device storage/upgrade acceptance gate.
 
 Implemented repository contract in [local_store.dart](../waypoint-mobile/lib/core/storage/local_store.dart):
 ```dart

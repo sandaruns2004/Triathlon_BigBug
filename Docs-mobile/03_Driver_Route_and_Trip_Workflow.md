@@ -5,6 +5,15 @@ Progress is maintained in [00__Work_List.md](00__Work_List.md) under [the reposi
 
 ## Implemented tricky code
 
+### Review update — 1 October 2026
+
+Status remains **Implemented — verification pending**. [Review evidence](../waypoint-mobile/docs/mobile-review-and-fixes.md).
+
+- [x] Retry a closeout readiness hold with the original UUID after stops/holds resolve, including recognizable older conflict records.
+- [x] Preserve original POD draft lines through a route/manifest change.
+- [x] Add worker and form-restoration regression coverage.
+- [ ] Rehearse closeout/Trip 2 and offline/navigation on a physical target phone.
+
 Implemented entry points: [route repository](../waypoint-mobile/lib/features/driver_route/connected_route_repository.dart), [owner-scoped cache](../waypoint-mobile/lib/core/data/operational_repository.dart), [route UI](../waypoint-mobile/lib/features/connected/driver_route_page.dart).
 ~~~dart
 final result = await repository.read(

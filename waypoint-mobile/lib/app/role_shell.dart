@@ -67,6 +67,10 @@ class RoleShell extends ConsumerWidget {
               ref.watch(connectionStateProvider).isNotEmpty)
             ConnectionBanner(
               label: ref.watch(connectionStateProvider),
+              offline: ref
+                  .watch(connectionStateProvider)
+                  .toLowerCase()
+                  .contains('offline'),
               onTap: () => context.push(
                 driver ? '/driver/activity/sync' : '/store/profile/sync',
               ),
@@ -88,6 +92,7 @@ class RoleShell extends ConsumerWidget {
                       (MediaQuery.sizeOf(context).width - 16) /
                       (largeText ? 2 : 4),
                   child: Semantics(
+                    label: labels[index],
                     selected: shell.currentIndex == index,
                     button: true,
                     child: InkWell(
@@ -112,12 +117,18 @@ class RoleShell extends ConsumerWidget {
                           children: [
                             Icon(icons[index], color: context.tokens.deepGreen),
                             const SizedBox(height: 4),
-                            Text(
-                              labels[index],
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: context.tokens.deepGreen,
-                                fontSize: 16,
+                            ExcludeSemantics(
+                              child: Text(
+                                !driver && index == 2
+                                    ? 'Updates'
+                                    : labels[index],
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: context.tokens.deepGreen,
+                                  fontSize: 16,
+                                ),
                               ),
                             ),
                           ],

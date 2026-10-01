@@ -5,6 +5,15 @@ Progress is maintained in [00__Work_List.md](00__Work_List.md) under [the reposi
 
 ## Implemented tricky code
 
+### Review update — 1 October 2026
+
+Status remains **Implemented — verification pending**. [Review evidence](../waypoint-mobile/docs/mobile-review-and-fixes.md).
+
+- [x] Persist catalogue unit snapshots and change notices; require explicit review/re-entry for changed or unknown legacy-cart units.
+- [x] Preserve unchanged cart quantities and safely save when leaving order/receipt forms.
+- [x] Verify changed, unchanged and legacy cart restoration with widget tests.
+- [ ] Complete the hosted/physical planning-to-receipt rehearsal.
+
 Implemented entry points: [Store screens](../waypoint-mobile/lib/features/connected/store_pages.dart), [server order/receipt rules](../waypoint-flow/lib/mobile/service.ts), [private photo view](../waypoint-mobile/lib/features/connected/evidence_viewer.dart).
 ~~~text
 receipt_recorded concurrency = receiptVersion + proofVersion

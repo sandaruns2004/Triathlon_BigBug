@@ -21,7 +21,7 @@ Future<void> main() async {
     final auth = config.fixtureMode
         ? null
         : await FirebaseAuthenticationRepository.initialize(config);
-    final principal = await auth?.restore();
+    final principal = storage.durable ? await auth?.restore() : null;
     runApp(
       ProviderScope(
         overrides: [

@@ -249,6 +249,24 @@ class SyncWorker {
       final byId = {for (final op in operations) op['id'] as String: op};
       for (final operation in operations) {
         if (lostLease || !_canContinue(principal)) break;
+        final status = operation['status'];
+        if ([
+          'synced',
+          'rejected',
+          'awaitingOperations',
+          'retainedForAudit',
+        ].contains(status)) {
+          continue;
+        }
+        // A readiness hold can resolve without changing this request. Older
+        // app versions recorded it as a conflict; replay that same UUID too.
+        final readinessConflict =
+            status == 'conflict' &&
+            operation['type'] == 'trip_closeout' &&
+            (operation['failureCode'] == 'closeout_not_ready' ||
+                operation['message'] ==
+                    'All stop outcomes must be accepted and holds resolved before closeout.');
+        if (status == 'conflict' && !readinessConflict) continue;
         if (!operationScopeMatches(operation, currentPrincipal()!)) {
           await store.updateOperation(
             userId,
@@ -257,16 +275,6 @@ class SyncWorker {
             message:
                 'Saved work belongs to an earlier role or outlet. Operations must authorize recovery.',
           );
-          continue;
-        }
-        final status = operation['status'];
-        if ([
-          'synced',
-          'conflict',
-          'rejected',
-          'awaitingOperations',
-          'retainedForAudit',
-        ].contains(status)) {
           continue;
         }
         final next = DateTime.tryParse(
@@ -322,7 +330,10 @@ class SyncWorker {
           final authentication = failure.status == 401;
           final conflict =
               [403, 404, 409].contains(failure.status) &&
-              failure.code != 'dependency_pending';
+              ![
+                'dependency_pending',
+                'closeout_not_ready',
+              ].contains(failure.code);
           final rejected = [400, 413, 415, 422].contains(failure.status);
           final seconds = min(3600, 5 * pow(2, min(attempts, 9)).toInt());
           await store.updateOperation(
@@ -336,6 +347,7 @@ class SyncWorker {
                 ? 'rejected'
                 : 'retryableError',
             message: failure.message,
+            failureCode: failure.code,
             attempts: attempts,
             nextAttemptAt: authentication || conflict || rejected
                 ? null
@@ -364,7 +376,9 @@ class SyncWorker {
   SyncFailure _failure(Object error) {
     if (error is SyncFailure) return error;
     if (error is StorageFailure) {
-      return SyncFailure(422, 'local_storage_failure', error.message);
+      // A disk failure may occur after a successful server commit. Preserve
+      // the UUID so recovery obtains the canonical receipt through replay.
+      return SyncFailure(503, 'local_storage_failure', error.message);
     }
     if (error is DioException) {
       final body = error.response?.data;

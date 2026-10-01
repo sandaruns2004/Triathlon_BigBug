@@ -235,6 +235,7 @@ class LocalStore implements DraftRepository {
     String id, {
     required String status,
     String? message,
+    String? failureCode,
     int? attempts,
     DateTime? nextAttemptAt,
     Map<String, dynamic>? acknowledgment,
@@ -249,6 +250,7 @@ class LocalStore implements DraftRepository {
       ...existing,
       'status': status,
       'message': message,
+      'failureCode': failureCode,
       'attempts': ?attempts,
       'nextAttemptAt': nextAttemptAt?.toUtc().toIso8601String(),
       'acknowledgment': ?acknowledgment,

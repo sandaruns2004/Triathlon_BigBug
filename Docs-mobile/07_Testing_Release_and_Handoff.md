@@ -7,6 +7,20 @@ Progress is maintained in [00__Work_List.md](00__Work_List.md) under [the reposi
 
 ## Implemented tricky code
 
+### Review update — 1 October 2026
+
+Status remains **In progress**. [Current review/build evidence](../waypoint-mobile/docs/mobile-review-and-fixes.md) supplements the historical results below.
+
+- [x] Run 48 Flutter tests including eight recovery regressions; clean analysis.
+- [x] Add native connected app startup/sign-in/route smoke coverage.
+- [x] Build/install/launch the updated normal connected APK; verify native login rendering and record its SHA256.
+- [x] Relaunch the installed connected app in a visible Android emulator window on the subsequent run request; confirm login controls and running local services (1 October).
+- [x] Launch Flutter in Chrome and record the same-build browser review of all 19 route patterns; [errors/coverage](../waypoint-mobile/docs/chrome-page-review.md) distinguish 11 preview renders from 8 unsupported operational error states and the unavailable Chrome inspection connection.
+- [x] Resolve browser findings B01–B05; 50 Flutter tests pass, clean analysis/format and corrected browser recheck recorded. Also resolve reproduced renderer/font CDN startup failure with local assets.
+- [ ] Complete native operational/device gates separately; browser fixes do not update the installed APK or certify Apple/hosted behavior.
+- [x] Pass the new native UI smoke test: real local sign-in, Driver home and Route navigation; 1 passed on retry with local services checked and a longer bounded wait. The initial failed attempt remains documented in the evidence.
+- [ ] Retain physical-phone, hosted, Apple-toolchain and protected release gates.
+
 **iOS scope update (1 October):** iOS code/tooling is implemented in [Phase 8](08_iOS_Platform_and_Compatibility.md), with Apple release acceptance in [Phase 9](09_iOS_Testing_and_Release.md). [New shared evidence](../waypoint-mobile/docs/ios-verification.md) records 40 Flutter tests. Older Android artifact/runtime results remain dated 30 September; no iOS compilation or phone release is claimed.
 
 Implemented entry points: [verification](../waypoint-mobile/docs/phase-2-7-verification.md), [protected signing workflow](../.github/workflows/mobile-release.yml), [release checklist](../waypoint-mobile/docs/release-checklist.md).
@@ -156,5 +170,7 @@ Push, sockets, continuous GPS and guaranteed background transfer remain deferred
 **Exit gate:** the mobile app is demonstrably operational for its declared scope, with evidence of recovery under real device/network failures and a reproducible release procedure.
 
 ## Execution evidence and remaining gate
+
+UI follow-up on 1 October: clean analysis, 50 passing Flutter tests, browser Home/Profile visual checks and a newly built/installed normal debug APK. Connected Android login rendered; native Sync Centre/offline visual acceptance remains pending after emulator instability. See [UI verification and checksum](../waypoint-mobile/docs/ui-polish-verification.md). Phase remains **In progress**; physical, hosted and signed-release gates remain open.
 
 Software/test evidence is recorded in [phase-2-7-verification.md](../waypoint-mobile/docs/phase-2-7-verification.md). The code paths above replace the original proposed helpers. No production deployment, signing credential, physical camera acceptance or human policy approval is claimed. Keep this phase open until its applicable remaining release checks pass.

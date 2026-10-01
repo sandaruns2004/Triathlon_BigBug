@@ -120,11 +120,17 @@ class ConnectedProfilePage extends ConsumerWidget {
     final p = ref.watch(sessionProvider)!;
     return PageBody(
       children: [
-        PageHeading(
-          p.name,
-          p.role == MobileRole.driver ? 'Driver' : 'Store Manager',
+        const PageHeading('Your workspace', 'Account and saved work'),
+        AccountSummaryCard(
+          name: p.name,
+          subtitle:
+              '${p.role == MobileRole.driver ? 'Driver' : 'Store Manager'} · ${p.depot ?? p.outletId ?? ''}',
+          badge: 'Connected account',
         ),
-        Text(p.depot ?? p.outletId ?? ''),
+        const PageHeading(
+          'Access and recovery',
+          'Saved work stays protected when you sign out',
+        ),
         Text('Offline access until ${p.offlineExpiresAt?.toLocal()}'),
         const Text(
           'Operations provisions roles and handles account recovery. Signing out locks saved work without deleting it.',
@@ -144,10 +150,13 @@ class ConnectedProfilePage extends ConsumerWidget {
           ),
         OutlinedButton(
           onPressed: () async {
-            final count = await ref
-                .read(storageProvider)
-                .store!
-                .queuedCount(p.userId);
+            final store = ref.read(storageProvider).store;
+            int? count;
+            try {
+              count = await store?.queuedCount(p.userId);
+            } catch (_) {
+              // Lock the account even when damaged/full storage cannot count.
+            }
             if (!context.mounted) return;
             final yes = await showWaypointSheet<bool>(
               context,
@@ -155,7 +164,7 @@ class ConnectedProfilePage extends ConsumerWidget {
               child: Column(
                 children: [
                   Text(
-                    '$count saved operations remain protected for this account. Sign in as the same user to resume them.',
+                    '${count == null ? 'Saved work' : '$count saved operations'} remains protected for this account. Sign in as the same user to resume it.',
                   ),
                   PrimaryButton(
                     label: 'Sign out and retain saved work',

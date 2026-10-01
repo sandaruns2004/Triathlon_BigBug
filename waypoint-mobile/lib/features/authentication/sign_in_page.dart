@@ -62,6 +62,9 @@ class _ConnectedSignInPageState extends ConsumerState<ConnectedSignInPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (ref.watch(storageProvider).error
+                        case final String error)
+                      Text(error),
                     const SizedBox(height: 32),
                     Text(
                       'Welcome to Waypoint Flow',
@@ -113,7 +116,9 @@ class _ConnectedSignInPageState extends ConsumerState<ConnectedSignInPage> {
                     PrimaryButton(
                       label: 'Sign in',
                       busy: busy,
-                      onPressed: signIn,
+                      onPressed: ref.watch(storageProvider).durable
+                          ? signIn
+                          : null,
                     ),
                     if (message != null)
                       Padding(

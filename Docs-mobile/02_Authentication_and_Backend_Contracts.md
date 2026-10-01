@@ -5,6 +5,15 @@ Progress is maintained in [00__Work_List.md](00__Work_List.md) under [the reposi
 
 ## Implemented tricky code
 
+### Login startup clarification — 1 October 2026
+
+- [x] Verify fixture mode selects the preview while connected mode selects `ConnectedSignInPage` for a missing session; a restored valid session redirects to its role home.
+- [x] Document the connected emulator command and Profile sign-out behavior in [README](../waypoint-mobile/README.md#why-login-may-not-appear).
+- [x] Execute native connected login and Driver route navigation in `integration_test/app_smoke_test.dart`: 1 passed against the isolated local backend.
+- [ ] Confirm hosted/physical-phone login and restoration; the Android local runtime check is recorded separately in [review evidence](../waypoint-mobile/docs/mobile-review-and-fixes.md).
+
+Status remains **Implemented — verification pending**. Do not force logout at every startup or erase saved delivery proof to demonstrate login.
+
 Implemented entry points: [native authentication](../waypoint-mobile/lib/core/auth/authentication_repository.dart), [shared verifier](../waypoint-flow/lib/auth/credentials.ts), [API schemas](../waypoint-flow/lib/mobile/domain.ts).
 ~~~dart
 await firebase.signInWithCustomToken(bridge['customToken'] as String);

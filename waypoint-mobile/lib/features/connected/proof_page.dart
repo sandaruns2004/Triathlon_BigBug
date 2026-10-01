@@ -30,6 +30,8 @@ class _ProofPageState extends ConsumerState<ProofPage> {
   Map<String, dynamic> draft = {};
   String? error;
   bool busy = false, parked = false;
+  OperationalRepository? repository;
+  bool formReady = false;
   int stage = 0;
   Future<void> saving = Future.value();
   Timer? debounce;
@@ -42,6 +44,26 @@ class _ProofPageState extends ConsumerState<ProofPage> {
   String get draftId => 'pod/${widget.stopId}';
   List<String> get photos =>
       ((draft['evidenceIds'] as List?) ?? []).cast<String>();
+  List<ManifestLine> get proofLines =>
+      ((draft['approvedLines'] as List?) ?? []).map((entry) {
+        final line = Map<String, dynamic>.from(entry as Map);
+        final current = stop!.lines
+            .where((l) => l.lineId == line['lineId'])
+            .firstOrNull;
+        return ManifestLine(
+          lineId: line['lineId'] as String,
+          productId:
+              line['productId'] as String? ??
+              current?.productId ??
+              line['lineId'] as String,
+          name:
+              line['name'] as String? ??
+              current?.name ??
+              line['lineId'] as String,
+          quantity: line['quantity'] as int,
+          unit: line['unit'] as String,
+        );
+      }).toList();
   @override
   void initState() {
     super.initState();
@@ -51,6 +73,7 @@ class _ProofPageState extends ConsumerState<ProofPage> {
   Future<void> load() async {
     try {
       final principal = ref.read(sessionProvider)!;
+      repository = ref.read(operationalProvider);
       owner = principal;
       final route = await ref.read(routeProvider(principal).future);
       final matches =
@@ -112,6 +135,8 @@ class _ProofPageState extends ConsumerState<ProofPage> {
                 .map(
                   (l) => {
                     'lineId': l.lineId,
+                    'productId': l.productId,
+                    'name': l.name,
                     'quantity': l.quantity,
                     'unit': l.unit,
                   },
@@ -136,10 +161,32 @@ class _ProofPageState extends ConsumerState<ProofPage> {
           },
         };
         draft['correction'] = true;
+        draft['approvedLines'] = stop!.lines
+            .map(
+              (l) => {
+                'lineId': l.lineId,
+                'productId': l.productId,
+                'name': l.name,
+                'quantity': l.quantity,
+                'unit': l.unit,
+              },
+            )
+            .toList();
       }
+      draft['approvedLines'] ??= stop!.lines
+          .map(
+            (l) => {
+              'lineId': l.lineId,
+              'productId': l.productId,
+              'name': l.name,
+              'quantity': l.quantity,
+              'unit': l.unit,
+            },
+          )
+          .toList();
       reason.text = draft['reason'] as String? ?? '';
       note.text = draft['note'] as String? ?? '';
-      for (final line in stop!.lines) {
+      for (final line in proofLines) {
         final previous = ((draft['lines'] as List?) ?? [])
             .where((l) => l['lineId'] == line.lineId)
             .toList();
@@ -160,6 +207,7 @@ class _ProofPageState extends ConsumerState<ProofPage> {
                 : (p as List).map((n) => (n as num).toDouble()).toList(),
           )
           .toList();
+      formReady = true;
       setState(() {});
       await persist();
       if (mounted) {
@@ -180,7 +228,7 @@ class _ProofPageState extends ConsumerState<ProofPage> {
     'reason': reason.text.trim(),
     'note': note.text,
     'signaturePoints': signature,
-    'lines': stop!.lines
+    'lines': proofLines
         .map(
           (l) => {
             'lineId': l.lineId,
@@ -192,12 +240,10 @@ class _ProofPageState extends ConsumerState<ProofPage> {
         .toList(),
   };
   Future<void> persist() {
-    if (stop == null) return Future.value();
+    if (!formReady) return Future.value();
     final snapshot = fields();
     final principal = owner!;
-    final repo = ref.read(operationalProvider),
-        id = draftId,
-        entity = stop!.stopId;
+    final repo = repository!, id = draftId, entity = stop!.stopId;
     saving = saving
         .catchError((Object _) {})
         .then((_) => repo.saveForm(principal, id, entity, snapshot));
@@ -246,7 +292,7 @@ class _ProofPageState extends ConsumerState<ProofPage> {
   String? validate() {
     final outcome = draft['outcome'];
     bool differs = false, delivered = false;
-    for (final line in stop!.lines) {
+    for (final line in proofLines) {
       final qty = int.tryParse(quantities[line.lineId]!.text);
       if (qty == null || qty < 0 || qty > line.quantity) {
         return 'Use whole quantities from zero to the approved quantity.';
@@ -350,7 +396,7 @@ class _ProofPageState extends ConsumerState<ProofPage> {
   @override
   void dispose() {
     debounce?.cancel();
-    if (stop != null) persist();
+    if (stop != null) persist().catchError((Object _) {});
     recipient.dispose();
     reason.dispose();
     note.dispose();
@@ -437,7 +483,7 @@ class _ProofPageState extends ConsumerState<ProofPage> {
                 changed();
               },
             ),
-            ...stop!.lines.map(
+            ...proofLines.map(
               (l) => SurfaceCard(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -525,7 +571,7 @@ class _ProofPageState extends ConsumerState<ProofPage> {
           if (stage == 2) ...[
             StatusChip('Review before saving', tone: StatusTone.attention),
             Text('Outcome: ${draft['outcome']}'),
-            ...stop!.lines.map(
+            ...proofLines.map(
               (l) => Text('${l.name}: ${quantities[l.lineId]!.text} ${l.unit}'),
             ),
             Text(
@@ -542,8 +588,12 @@ class _ProofPageState extends ConsumerState<ProofPage> {
             PrimaryButton(
               label: 'Continue',
               onPressed: () async {
-                await persist();
-                if (mounted) setState(() => stage++);
+                try {
+                  await persist();
+                  if (mounted) setState(() => stage++);
+                } catch (e) {
+                  if (context.mounted) notice(context, apiMessage(e));
+                }
               },
             ),
           if (stage > 0)

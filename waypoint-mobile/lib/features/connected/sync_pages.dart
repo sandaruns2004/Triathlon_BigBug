@@ -31,6 +31,30 @@ class ConnectedActivityPage extends ConsumerWidget {
             ),
             data: (rows) => Column(
               children: [
+                if (syncCentre) ...[
+                  SurfaceCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${rows.where((row) => row['status'] != 'synced').length}',
+                          style: Theme.of(context).textTheme.headlineLarge,
+                        ),
+                        const Text(
+                          'saved records not yet accepted by the server',
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '${rows.where((row) => row['status'] == 'synced').length} accepted · ${rows.length} saved records',
+                        ),
+                        const Text(
+                          'Review each status below. Conflicts and rejected records need attention; they are not automatically retried.',
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                ],
                 if (rows.isEmpty)
                   const EmptyState(
                     title: 'Nothing pending',

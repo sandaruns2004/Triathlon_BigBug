@@ -226,6 +226,8 @@ class StoreComposerPage extends ConsumerStatefulWidget {
 
 class _StoreComposerState extends ConsumerState<StoreComposerPage> {
   Principal? owner;
+  OperationalRepository? repository;
+  bool formReady = false;
   final quantities = <String, TextEditingController>{};
   final note = TextEditingController();
   Map<String, dynamic>? catalogue;
@@ -248,6 +250,7 @@ class _StoreComposerState extends ConsumerState<StoreComposerPage> {
       final p = ref.read(sessionProvider)!;
       owner = p;
       final repo = ref.read(operationalProvider);
+      repository = repo;
       final read = await repo.read('store/catalogue', 'catalogue', p);
       final saved = await repo.loadForm(p, draftId);
       if (!mounted) return;
@@ -255,6 +258,9 @@ class _StoreComposerState extends ConsumerState<StoreComposerPage> {
       draft =
           saved ??
           {'operationId': const Uuid().v4(), 'draftId': const Uuid().v4()};
+      changedProducts = ((draft['catalogueChanges'] as List?) ?? [])
+          .cast<String>()
+          .toList();
       if (widget.correctionId != null) {
         final original = await repo.store.read(
           LocalTable.outbox,
@@ -292,11 +298,41 @@ class _StoreComposerState extends ConsumerState<StoreComposerPage> {
         }
       }
       if (draft['submitted'] == true) {
+        changedProducts.clear();
         draft = {
           'operationId': const Uuid().v4(),
           'draftId': const Uuid().v4(),
         };
       }
+      // Preserve the catalogue meaning of a saved quantity. A new unit must
+      // never reinterpret an old cart (for example, 10 cases as 10 kg).
+      final savedProducts = draft['products'] as Map?;
+      final savedQuantities = Map<String, dynamic>.from(
+        draft['quantities'] as Map? ?? {},
+      );
+      if (savedProducts != null) {
+        for (final entry in savedQuantities.entries) {
+          if ((entry.value as num) <= 0) continue;
+          final old = savedProducts[entry.key] as Map?;
+          final current = (catalogue!['products'] as List)
+              .where((p) => p['productId'] == entry.key)
+              .firstOrNull;
+          if (current == null || old?['unit'] != current['unit']) {
+            changedProducts.add(
+              '${entry.key} · ${entry.value} ${old?['unit'] ?? 'saved unit'}',
+            );
+            savedQuantities[entry.key] = 0;
+          }
+        }
+      } else if (savedQuantities.values.any((q) => (q as num) > 0) &&
+          widget.correctionId == null) {
+        // Legacy carts did not store units; ask for explicit re-entry.
+        changedProducts.add(
+          'Saved cart units could not be verified (${savedQuantities.entries.where((e) => (e.value as num) > 0).map((e) => '${e.key}: ${e.value}').join(', ')}). Re-enter the quantities using the current catalogue.',
+        );
+        savedQuantities.updateAll((_, _) => 0);
+      }
+      draft['quantities'] = savedQuantities;
       final dates =
           ((catalogue!['serviceOptions'] as Map)['serviceDates'] as List)
               .cast<String>();
@@ -311,6 +347,7 @@ class _StoreComposerState extends ConsumerState<StoreComposerPage> {
           text: '${(draft['quantities'] as Map?)?[item['productId']] ?? 0}',
         );
       }
+      formReady = true;
       setState(() {});
     } catch (e) {
       if (mounted) setState(() => error = apiMessage(e));
@@ -318,13 +355,22 @@ class _StoreComposerState extends ConsumerState<StoreComposerPage> {
   }
 
   Future<void> persist() {
+    if (!formReady) return Future.value();
     final p = owner!;
-    final repo = ref.read(operationalProvider);
+    final repo = repository!;
     final id = draftId;
     final data = {
       ...draft,
       'requestedDate': date,
       'note': note.text,
+      'catalogueChanges': changedProducts.toSet().toList(),
+      'products': {
+        for (final product in catalogue!['products'] as List)
+          product['productId']: {
+            'unit': product['unit'],
+            'name': product['name'],
+          },
+      },
       'quantities': {
         for (final e in quantities.entries)
           e.key: int.tryParse(e.value.text) ?? 0,
@@ -333,6 +379,9 @@ class _StoreComposerState extends ConsumerState<StoreComposerPage> {
     saving = saving
         .catchError((Object _) {})
         .then((_) => repo.saveForm(p, id, id, data));
+    saving.catchError((Object e) {
+      if (mounted) notice(context, apiMessage(e));
+    });
     return saving;
   }
 
@@ -408,7 +457,7 @@ class _StoreComposerState extends ConsumerState<StoreComposerPage> {
 
   @override
   void dispose() {
-    if (catalogue != null) persist();
+    if (catalogue != null) persist().catchError((Object _) {});
     for (final c in quantities.values) {
       c.dispose();
     }
@@ -594,6 +643,8 @@ class StoreReceiptIssuePage extends ConsumerStatefulWidget {
 
 class _StoreReceiptIssueState extends ConsumerState<StoreReceiptIssuePage> {
   Principal? owner;
+  OperationalRepository? repository;
+  bool formReady = false;
   Map<String, dynamic>? order;
   Map<String, dynamic> draft = {};
   final quantities = <String, TextEditingController>{},
@@ -619,6 +670,7 @@ class _StoreReceiptIssueState extends ConsumerState<StoreReceiptIssuePage> {
       final p = ref.read(sessionProvider)!,
           repo = ref.read(operationalProvider);
       owner = p;
+      repository = repo;
       final read = await repo.read(
         'store/orders/${widget.orderId}',
         'order/${widget.orderId}',
@@ -672,6 +724,7 @@ class _StoreReceiptIssueState extends ConsumerState<StoreReceiptIssuePage> {
           text: (draft['reasons'] as Map?)?[l['lineId']] as String? ?? '',
         );
       }
+      formReady = true;
       setState(() {});
     } catch (e) {
       if (mounted) setState(() => error = apiMessage(e));
@@ -679,7 +732,8 @@ class _StoreReceiptIssueState extends ConsumerState<StoreReceiptIssuePage> {
   }
 
   Future<void> persist() {
-    final p = owner!, repo = ref.read(operationalProvider), id = draftId;
+    if (!formReady) return Future.value();
+    final p = owner!, repo = repository!, id = draftId;
     final data = {
       ...draft,
       'note': note.text,
@@ -694,6 +748,9 @@ class _StoreReceiptIssueState extends ConsumerState<StoreReceiptIssuePage> {
     saving = saving
         .catchError((Object _) {})
         .then((_) => repo.saveForm(p, id, widget.orderId, data));
+    saving.catchError((Object e) {
+      if (mounted) notice(context, apiMessage(e));
+    });
     return saving;
   }
 
@@ -794,7 +851,7 @@ class _StoreReceiptIssueState extends ConsumerState<StoreReceiptIssuePage> {
 
   @override
   void dispose() {
-    if (order != null) persist();
+    if (order != null) persist().catchError((Object _) {});
     for (final c in [...quantities.values, ...reasons.values]) {
       c.dispose();
     }

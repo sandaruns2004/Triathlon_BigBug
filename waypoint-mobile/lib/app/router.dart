@@ -118,8 +118,11 @@ final routerProvider = Provider<GoRouter>((ref) {
                 routes: [
                   GoRoute(
                     path: 'stop/:id',
-                    builder: (_, state) =>
-                        ProofPage(stopId: state.pathParameters['id']!),
+                    builder: (_, state) => fixture
+                        ? const NativeWorkflowPreviewPage(
+                            returnPath: '/driver/route',
+                          )
+                        : ProofPage(stopId: state.pathParameters['id']!),
                   ),
                 ],
               ),
@@ -153,7 +156,11 @@ final routerProvider = Provider<GoRouter>((ref) {
                 routes: [
                   GoRoute(
                     path: 'updates',
-                    builder: (_, _) => const ConnectedNotificationsPage(),
+                    builder: (_, _) => fixture
+                        ? const NativeWorkflowPreviewPage(
+                            returnPath: '/driver/profile',
+                          )
+                        : const ConnectedNotificationsPage(),
                   ),
                 ],
               ),
@@ -185,34 +192,55 @@ final routerProvider = Provider<GoRouter>((ref) {
                 routes: [
                   GoRoute(
                     path: 'new',
-                    builder: (_, state) => StoreComposerPage(
-                      correctionId: state.uri.queryParameters['correction'],
-                    ),
+                    builder: (_, state) => fixture
+                        ? const NativeWorkflowPreviewPage(
+                            returnPath: '/store/orders',
+                          )
+                        : StoreComposerPage(
+                            correctionId:
+                                state.uri.queryParameters['correction'],
+                          ),
                   ),
                   GoRoute(
                     path: ':id',
-                    builder: (_, state) => StoreOrderDetailPage(
-                      orderId: state.pathParameters['id']!,
-                    ),
+                    builder: (_, state) => fixture
+                        ? const NativeWorkflowPreviewPage(
+                            returnPath: '/store/orders',
+                          )
+                        : StoreOrderDetailPage(
+                            orderId: state.pathParameters['id']!,
+                          ),
                     routes: [
                       GoRoute(
                         path: 'receipt',
-                        builder: (_, state) => StoreReceiptIssuePage(
-                          orderId: state.pathParameters['id']!,
-                        ),
+                        builder: (_, state) => fixture
+                            ? const NativeWorkflowPreviewPage(
+                                returnPath: '/store/orders',
+                              )
+                            : StoreReceiptIssuePage(
+                                orderId: state.pathParameters['id']!,
+                              ),
                       ),
                       GoRoute(
                         path: 'issue',
-                        builder: (_, state) => StoreReceiptIssuePage(
-                          orderId: state.pathParameters['id']!,
-                          issue: true,
-                        ),
+                        builder: (_, state) => fixture
+                            ? const NativeWorkflowPreviewPage(
+                                returnPath: '/store/orders',
+                              )
+                            : StoreReceiptIssuePage(
+                                orderId: state.pathParameters['id']!,
+                                issue: true,
+                              ),
                       ),
                       GoRoute(
                         path: 'note',
-                        builder: (_, state) => DeliveryNotePage(
-                          orderId: state.pathParameters['id']!,
-                        ),
+                        builder: (_, state) => fixture
+                            ? const NativeWorkflowPreviewPage(
+                                returnPath: '/store/orders',
+                              )
+                            : DeliveryNotePage(
+                                orderId: state.pathParameters['id']!,
+                              ),
                       ),
                     ],
                   ),
@@ -240,8 +268,11 @@ final routerProvider = Provider<GoRouter>((ref) {
                 routes: [
                   GoRoute(
                     path: 'sync',
-                    builder: (_, _) =>
-                        const ConnectedActivityPage(syncCentre: true),
+                    builder: (_, _) => fixture
+                        ? const NativeWorkflowPreviewPage(
+                            returnPath: '/store/profile',
+                          )
+                        : const ConnectedActivityPage(syncCentre: true),
                   ),
                 ],
               ),

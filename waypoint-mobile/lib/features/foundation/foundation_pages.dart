@@ -77,7 +77,7 @@ class WelcomePage extends ConsumerWidget {
           ),
           if (config.fixtureMode) ...[
             const StatusChip(
-              'Phase 1 · fixture preview',
+              'Fixture preview · sample data',
               tone: StatusTone.attention,
             ),
             const Text(
@@ -97,7 +97,7 @@ class WelcomePage extends ConsumerWidget {
             ),
           ] else
             const EmptyState(
-              title: 'Connected sign-in needs Phase 2',
+              title: 'Connected sign-in requires a verified account',
               message:
                   'This foundation never substitutes a sample account for verified authentication. Configure the identity bridge before connecting.',
             ),
@@ -107,6 +107,28 @@ class WelcomePage extends ConsumerWidget {
       ),
     );
   }
+}
+
+class NativeWorkflowPreviewPage extends StatelessWidget {
+  const NativeWorkflowPreviewPage({super.key, required this.returnPath});
+  final String returnPath;
+
+  @override
+  Widget build(BuildContext context) => PageBody(
+    children: [
+      const PageHeading(
+        'Available in the connected app',
+        'Fixture preview · no server actions',
+      ),
+      const Text(
+        'This workflow needs a verified account and protected device storage. Open the connected Android or iOS app to use delivery proof, live updates, orders and sync. This preview does not save or submit operational work.',
+      ),
+      PrimaryButton(
+        label: 'Back to preview',
+        onPressed: () => context.go(returnPath),
+      ),
+    ],
+  );
 }
 
 class DriverTodayPage extends ConsumerWidget {
@@ -150,7 +172,7 @@ class DriverTodayPage extends ConsumerWidget {
               ),
               const SizedBox(height: 12),
               const Text(
-                'Refrigerated load · check handling and receiving windows. Real release/start checks arrive in Phase 3.',
+                'Refrigerated load · check handling and receiving windows. Live release and departure checks are available in the connected native app.',
               ),
               const SizedBox(height: 12),
               OutlinedButton(
@@ -170,7 +192,7 @@ class DriverTodayPage extends ConsumerWidget {
               ),
               SizedBox(height: 8),
               Text(
-                'Trip 2 stays unavailable until server eligibility is implemented.',
+                'The connected native app checks server eligibility before showing Trip 2. This preview uses a fixed sample trip.',
               ),
             ],
           ),
@@ -229,7 +251,7 @@ class DriverRoutePage extends ConsumerWidget {
                             ),
                           ),
                           const Text(
-                            'POD, parked-mode confirmation and server updates are added in later phases.',
+                            'Proof of delivery, parked confirmation and live updates require the connected native app.',
                           ),
                         ],
                       ),
@@ -259,7 +281,7 @@ class ActivityPage extends ConsumerWidget {
       const EmptyState(
         title: 'Your records stay with you',
         message:
-            'Phase 1 provides the local schema. No deliveries or uploads are simulated.',
+            'This preview does not create delivery records or uploads. Use the connected native app for saved work and live activity.',
         asset: 'assets/mobile/offline-records-safe.png',
       ),
     ],
@@ -292,9 +314,9 @@ class SyncCentrePage extends ConsumerWidget {
                       : '${snapshot.data ?? 0} pending operations',
                 ),
                 const SizedBox(height: 12),
-                const Text('No upload worker is connected in Phase 1.'),
+                const Text('Uploads are unavailable in this fixture preview.'),
                 const SizedBox(height: 12),
-                const PrimaryButton(label: 'Sync available in Phase 4'),
+                const PrimaryButton(label: 'Sync requires the connected app'),
               ],
             ),
           ),
@@ -331,19 +353,110 @@ class StoreHomePage extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             const Text('FIXTURE-ORDER-01 · receiving window 04:00–07:45'),
+            const SizedBox(height: 16),
+            const Wrap(
+              spacing: 28,
+              runSpacing: 12,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '02',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Text('product lines'),
+                  ],
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '20',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Text('cases & trays'),
+                  ],
+                ),
+              ],
+            ),
             const SizedBox(height: 18),
             PrimaryButton(
-              label: 'View sample order',
+              label: 'View sample orders',
               onPressed: () => context.go('/store/orders'),
             ),
           ],
         ),
       ),
-      const EmptyState(
-        title: 'A smooth receiving day',
-        message:
-            'Order, tracking and receipt services are implemented in Phase 5.',
-        asset: 'assets/mobile/store-onboarding-order-receipt.png',
+      OutlinedButton.icon(
+        onPressed: () => context.go('/store/orders'),
+        icon: const Icon(LucideIcons.history),
+        label: const Text('Order history'),
+      ),
+      SurfaceCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: ClipRect(
+                child: SizedBox(
+                  width: 180,
+                  height: 120,
+                  child: OverflowBox(
+                    maxWidth: 340,
+                    maxHeight: 340,
+                    child: Image.asset(
+                      'assets/mobile/store-onboarding-order-receipt.png',
+                      width: 340,
+                      height: 340,
+                      excludeFromSemantics: true,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'A smooth receiving day',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Create orders, track deliveries and record receipts in the connected native app. This preview shows sample data.',
+            ),
+          ],
+        ),
+      ),
+      const PageHeading(
+        'Sample activity',
+        'Preview timeline · no live delivery events',
+      ),
+      const SurfaceCard(
+        child: Column(
+          children: [
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(LucideIcons.clipboardCheck),
+              title: Text('Order planned'),
+              subtitle: Text(
+                'Sample manifest: 12 cases of milk and 8 trays of yoghurt.',
+              ),
+            ),
+            Divider(),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(LucideIcons.clock),
+              title: Text('Awaiting delivery'),
+              subtitle: Text('Receiving window 04:00–07:45 · sample schedule.'),
+            ),
+          ],
+        ),
       ),
     ],
   );
@@ -365,7 +478,7 @@ class StoreOrdersPage extends StatelessWidget {
             SizedBox(height: 8),
             Text('Fresh milk: 12 cases\nYoghurt: 8 trays'),
             SizedBox(height: 12),
-            PrimaryButton(label: 'Ordering available in Phase 5'),
+            PrimaryButton(label: 'Ordering requires the connected app'),
           ],
         ),
       ),
@@ -391,6 +504,59 @@ class StoreNotificationsPage extends StatelessWidget {
   );
 }
 
+class AccountSummaryCard extends StatelessWidget {
+  const AccountSummaryCard({
+    super.key,
+    required this.name,
+    required this.subtitle,
+    required this.badge,
+  });
+  final String name, subtitle, badge;
+  @override
+  Widget build(BuildContext context) => SurfaceCard(
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            CircleAvatar(
+              radius: 28,
+              backgroundColor: context.tokens.paleGreen,
+              child: Text(
+                name.trim().isEmpty
+                    ? '?'
+                    : name
+                          .trim()
+                          .split(RegExp(r'\s+'))
+                          .take(2)
+                          .map((part) => part.characters.first)
+                          .join(),
+                style: TextStyle(
+                  color: context.tokens.deepGreen,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(name, style: Theme.of(context).textTheme.titleLarge),
+                  const SizedBox(height: 4),
+                  Text(subtitle),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        StatusChip(badge),
+      ],
+    ),
+  );
+}
+
 class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});
   @override
@@ -399,15 +565,40 @@ class ProfilePage extends ConsumerWidget {
     if (principal == null) return const SizedBox.shrink();
     return PageBody(
       children: [
-        PageHeading(
-          principal.name,
-          principal.role == MobileRole.driver
+        const PageHeading('Your workspace', 'Account and saved work'),
+        AccountSummaryCard(
+          name: principal.name,
+          subtitle: principal.role == MobileRole.driver
               ? 'Driver · ${principal.depot}'
               : 'Store Manager · ${principal.outletId}',
+          badge: 'Fixture identity · no backend login',
         ),
-        const StatusChip(
-          'Fixture identity · no backend login',
-          tone: StatusTone.attention,
+        SurfaceCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Workspace', style: Theme.of(context).textTheme.titleMedium),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(LucideIcons.refreshCw),
+                title: const Text('Sync Centre'),
+                subtitle: const Text('Explore how saved work is handled'),
+                trailing: const Icon(LucideIcons.chevronRight),
+                onTap: () => context.push(
+                  principal.role == MobileRole.driver
+                      ? '/driver/activity/sync'
+                      : '/store/profile/sync',
+                ),
+              ),
+              const Text(
+                'Real account access and recovery are managed by operations. This fixture account does not submit deliveries or orders.',
+              ),
+            ],
+          ),
+        ),
+        const PageHeading(
+          'Preview tools',
+          'Development checks for sample accounts',
         ),
         PrimaryButton(
           label: 'Local storage lab',

@@ -21,7 +21,7 @@ Departure dependencies precede POD. Finalized media precedes evidence-dependent 
 
 Foreground timer (30 seconds), app resume/start and manual Sync now trigger work. There is no guaranteed background worker; closing the app pauses transfer. Reopen or use manual sync after reconnection.
 
-HTTP reachability determines success. A Wi-Fi icon is not a server acknowledgment. Retryable errors use bounded exponential backoff with jitter; manual retry bypasses the waiting time but retains UUID/payload.
+HTTP reachability determines success. A Wi-Fi icon is not a server acknowledgment. Retryable errors use bounded exponential backoff; randomized jitter remains pending. Manual retry bypasses the waiting time but retains UUID/payload.
 
 The transport passes the original user to the API interceptor. Token acquisition/401 refresh cannot switch a pending mutation to a different account. Local owner scope and server concurrency.ownerScope also prevent replay after role/depot/outlet changes.
 
