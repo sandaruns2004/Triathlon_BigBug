@@ -29,6 +29,7 @@ export function DesktopShell({ children }: DesktopShellProps) {
   const NAV_ITEMS = [
     { label: "Operations", href: "/dispatcher", icon: <LayoutDashboard size={20} /> },
     { label: "Planning",   href: "/dispatcher/plan", icon: <CalendarDays size={20} /> },
+    { label: "Control", href: "/dispatcher/operations", icon: <Users size={20} /> },
     { label: "Fleet",      href: "/dispatcher/fleet", icon: <Truck size={20} /> },
     { label: "Staff",      href: "/dispatcher/staff", icon: <Users size={20} /> },
   ];

@@ -1,0 +1,15 @@
+.jtmp/
+waypoint-mobile/.jtmp/
+**/node_modules/
+**/.next/
+**/.test-media/
+**/firebase-debug.log
+**/firestore-debug.log
+**/ui-debug.log
+**/*.tsbuildinfo
+**/.env.local
+waypoint-mobile/config/staging.json
+waypoint-mobile/config/production.json
+waypoint-mobile/android/key.properties
+**/*.jks
+**/*.keystore

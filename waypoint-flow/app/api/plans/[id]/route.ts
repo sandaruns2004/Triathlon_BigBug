@@ -1,3 +1,4 @@
+import { businessDate } from "@/lib/mobile/domain";
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth/nextauth";
@@ -14,7 +15,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   }
 
   const depot = (session.user as any).depot ?? "Peliyagoda";
-  const today = new Date().toISOString().split("T")[0];
+  const today = businessDate();
   const planId = params.id;
 
   // Run queries in parallel

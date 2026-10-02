@@ -83,7 +83,7 @@ function groupOrders(orders: Order[]): Map<string, Order[]> {
 // C3: van_only outlets → van-type vehicle only
 export function canVehicleServeOrder(vehicle: Vehicle, order: Order): boolean {
   if (vehicle.depot !== order.depot) return false;                                          // C1
-  if (["chilled", "frozen"].includes(order.tempRequirement) && vehicle.temp !== "reefer")
+  if (["chilled", "frozen", "reefer"].includes(order.tempRequirement) && vehicle.temp !== "reefer")
     return false;                                                                            // C2
   if (order.parkingConstraint === "van_only" && vehicle.type !== "van") return false;       // C3
   return true;

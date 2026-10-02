@@ -1,0 +1,36 @@
+name: Mobile shared API checks
+on:
+  push:
+    paths: ['waypoint-flow/**', '.github/workflows/mobile-api-ci.yml']
+  pull_request:
+    paths: ['waypoint-flow/**', '.github/workflows/mobile-api-ci.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: waypoint-flow
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: waypoint-flow/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+      - name: Isolated domain and real HTTP checks
+        env:
+          MOBILE_TEST_MODE: emulator
+          FIREBASE_PROJECT_ID: demo-waypoint-mobile
+          FIRESTORE_EMULATOR_HOST: 127.0.0.1:8085
+          FIREBASE_AUTH_EMULATOR_HOST: 127.0.0.1:9099
+        run: npx firebase emulators:exec --only auth,firestore --project demo-waypoint-mobile --config firebase.mobile.json "node scripts/run-mobile-checks.mjs"

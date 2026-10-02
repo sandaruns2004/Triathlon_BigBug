@@ -40,6 +40,8 @@ export async function middleware(request: NextRequest) {
   const role = token.role as string;
   const allowed = ROLE_ROUTES[role];
 
+  if (!allowed) return NextResponse.redirect(new URL("/login", request.url));
+
   // Role trying to access a route it doesn't own → redirect to its home
   if (allowed && !pathname.startsWith(allowed) && !pathname.startsWith("/api")) {
     return NextResponse.redirect(new URL(allowed, request.url));

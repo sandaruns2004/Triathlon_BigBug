@@ -38,7 +38,6 @@ export default function RouteMap({ trips = [] }: { trips?: Trip[] }) {
       if (t.lat && t.lng) initialLocations[t.vehicleId] = { lat: t.lat, lng: t.lng };
     });
     setVehicleLocations(initialLocations);
-
     // NOTE: Socket.IO real-time updates require a persistent server (not Vercel serverless).
     // For Vercel deployments, vehicle positions are refreshed via the parent component
     // polling /api/dispatcher/overview on a timer. Add a polling interval here if needed.
@@ -50,11 +49,11 @@ export default function RouteMap({ trips = [] }: { trips?: Trip[] }) {
   return (
     <div className="card-panel overflow-hidden w-full h-full flex flex-col relative z-0">
       <div className="p-4 bg-white border-b border-wp-border absolute top-0 left-0 right-0 z-[1000] shadow-sm flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-wp-ink">Live Fleet Map</h2>
+        <h2 className="text-sm font-semibold text-wp-ink">Fleet map · last saved positions</h2>
         <div className="flex gap-2">
           <span className="flex items-center gap-1.5 text-xs text-wp-muted">
             <span className="w-2 h-2 rounded-full bg-wp-green animate-pulse"></span>
-            Live (3 sec)
+            Refresh-based · no continuous GPS
           </span>
         </div>
       </div>

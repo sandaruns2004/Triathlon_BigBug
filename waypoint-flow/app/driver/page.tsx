@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import { envelope } from "@/lib/mobile/browser";
 import Link from "next/link";
 import { Play, MapPin, CheckCircle2, Navigation, AlertCircle } from "lucide-react";
 import { StatusChip } from "@/components/shared/StatusChip";
@@ -10,6 +11,9 @@ export default function DriverTodayPage() {
   const [trip, setTrip] = useState<any>(null);
   const [stops, setStops] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState("");
+  const [starting, setStarting] = useState(false);
+  const startRequest = useRef<any>();
 
   const fetchTrip = () => {
     fetch("/api/driver/trip")
@@ -27,16 +31,22 @@ export default function DriverTodayPage() {
 
   useEffect(() => {
     fetchTrip();
+    const timer=setInterval(fetchTrip,30000);
+    return()=>clearInterval(timer);
   }, []);
 
   const handleStartRoute = async () => {
-    if (!trip) return;
+    if (!trip || starting || !window.confirm("Are you safely parked before departure?")) return;
+    setStarting(true);
     try {
-      await fetch(`/api/driver/trips/${trip.tripId}/start`, { method: "POST" });
+      startRequest.current ??= envelope("trip_start", {parkedAcknowledged:true}, {tripId:trip.tripId}, {assignmentVersion:trip.assignmentVersion,releaseVersion:trip.releaseVersion});
+      const res = await fetch(`/api/driver/trips/${trip.tripId}/start`, { method: "POST", headers:{"Content-Type":"application/json"},body:JSON.stringify(startRequest.current) });
+      const result = await res.json();
+      if (!res.ok) { if(res.status<500)startRequest.current=undefined; throw Error(result.error); }
       fetchTrip();
     } catch (e) {
-      console.error(e);
-    }
+      setMessage((e as Error).message);
+    } finally { setStarting(false); }
   };
 
   if (loading) return <div className="p-8 text-center text-wp-muted">Loading route...</div>;
@@ -53,11 +63,12 @@ export default function DriverTodayPage() {
     );
   }
 
-  const isReady = trip.status === "ready_to_depart";
-  const isOnRoute = trip.status === "on_route";
+  const isReady = trip.status === "ready_to_depart" && trip.released && !trip.held;
+  const isOnRoute = ["on_route","returning"].includes(trip.status) && !trip.held;
 
   return (
     <div className="flex flex-col h-full bg-wp-pale pb-20">
+      <p role="status" className="p-3">{message}</p>
       {/* Hero Section */}
       <div className="bg-wp-ink text-white p-6 pb-8 rounded-b-3xl shadow-md">
         <div className="flex justify-between items-start mb-6">
@@ -102,7 +113,7 @@ export default function DriverTodayPage() {
         
         <div className="space-y-3">
           {stops.map((stop) => {
-            const isCompleted = stop.status === "delivered" || stop.status === "failed";
+            const isCompleted = ["delivered","partial","failed","refused","skipped"].includes(stop.status);
             
             return (
               <Link 

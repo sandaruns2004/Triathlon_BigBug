@@ -6,7 +6,13 @@
     "dev": "node server.js",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "mobile:publish-events": "tsx scripts/publish-mobile-events.ts",
+    "mobile:prepare-device": "tsx scripts/prepare-mobile-device.ts",
+    "test:mobile:http": "tsx --test tests/mobile-http.test.ts",
+    "typecheck": "tsc --noEmit --incremental false",
+    "test:mobile": "tsx --test tests/mobile-service.test.ts",
+    "mobile:seed": "tsx scripts/seed-mobile-test.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1142.0",
@@ -41,9 +47,10 @@
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "firebase-tools": "^15.32.0",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
+    "tsx": "^4.23.15",
     "typescript": "^5"
   }
 }
-

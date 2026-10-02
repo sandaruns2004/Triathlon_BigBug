@@ -1,0 +1,66 @@
+name: Mobile protected release
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  production:
+    environment: mobile-production
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: waypoint-mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.41.5'
+          cache: true
+      - run: flutter pub get
+      - run: dart format --output=none --set-exit-if-changed lib test integration_test
+      - run: flutter analyze
+      - run: flutter test --flavor development
+      - name: Prepare protected configuration
+        env:
+          KEYSTORE_BASE64: ${{ secrets.MOBILE_UPLOAD_KEYSTORE }}
+          STORE_PASSWORD: ${{ secrets.MOBILE_STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.MOBILE_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.MOBILE_KEY_ALIAS }}
+          CLIENT_CONFIGURATION: ${{ secrets.MOBILE_PRODUCTION_CONFIG }}
+        run: |
+          python3 - <<'PY'
+          import os, base64, json, pathlib
+          root=pathlib.Path.cwd()
+          cfg=json.loads(os.environ['CLIENT_CONFIGURATION'])
+          assert cfg['APP_ENV']=='production' and cfg['APP_MODE']=='connected'
+          assert cfg['API_BASE_URL'].startswith('https://') and not cfg.get('AUTH_EMULATOR_HOST')
+          (root/'config/production.json').write_text(json.dumps(cfg))
+          (root/'android/upload.jks').write_bytes(base64.b64decode(os.environ['KEYSTORE_BASE64'],validate=True))
+          def prop(v):
+              assert '\n' not in v and '\r' not in v
+              return v.replace('\\','\\\\').replace('=','\\=').replace(':','\\:')
+          (root/'android/key.properties').write_text(
+              'storeFile='+str(root/'android/upload.jks')+'\n'+
+              'storePassword='+prop(os.environ['STORE_PASSWORD'])+'\n'+
+              'keyPassword='+prop(os.environ['KEY_PASSWORD'])+'\n'+
+              'keyAlias='+prop(os.environ['KEY_ALIAS'])+'\n')
+          PY
+      - run: flutter build apk --release --flavor production --dart-define-from-file=config/production.json
+      - run: flutter build appbundle --release --flavor production --dart-define-from-file=config/production.json
+      - run: sha256sum build/app/outputs/flutter-apk/app-production-release.apk build/app/outputs/bundle/productionRelease/app-production-release.aab > release-checksums.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: waypoint-production-signed
+          path: |
+            waypoint-mobile/build/app/outputs/flutter-apk/app-production-release.apk
+            waypoint-mobile/build/app/outputs/bundle/productionRelease/app-production-release.aab
+            waypoint-mobile/release-checksums.txt
+          if-no-files-found: error
+      - name: Remove temporary signing files
+        if: always()
+        run: rm -f android/key.properties android/upload.jks config/production.json
+

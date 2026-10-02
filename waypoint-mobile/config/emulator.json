@@ -1,0 +1,13 @@
+{
+  "APP_ENV": "development",
+  "APP_MODE": "connected",
+  "API_BASE_URL": "http://10.0.2.2:3000/api/mobile/v1/",
+  "SOCKET_URL": "http://10.0.2.2:3000",
+  "SOCKET_PATH": "/socket.io",
+  "FIREBASE_PROJECT_ID": "demo-waypoint-mobile",
+  "FIREBASE_API_KEY": "fake-emulator-api-key",
+  "FIREBASE_APP_ID": "1:1234567890:android:0123456789abcdef",
+  "FIREBASE_SENDER_ID": "1234567890",
+  "AUTH_EMULATOR_HOST": "10.0.2.2",
+  "AUTH_EMULATOR_PORT": "9099"
+}

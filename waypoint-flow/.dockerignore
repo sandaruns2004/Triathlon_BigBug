@@ -1,0 +1,14 @@
+node_modules
+.next
+.next-mobile-test
+.next-mobile-*
+.test-media
+.env
+.env.*
+*-debug.log
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+service-account*.json
+*.pem
+*.key
