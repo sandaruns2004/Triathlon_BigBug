@@ -1,6 +1,6 @@
 import {db} from "../lib/db/firebase";
 import {getAuth} from "firebase-admin/auth";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import {identifier} from "../lib/mobile/errors";
 import {firebaseUidFor} from "../lib/auth/credentials";
 /** Operations-only process: IAM/admin credentials control execution. Never exposed as a public reset API. */

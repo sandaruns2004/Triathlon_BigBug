@@ -1,4 +1,4 @@
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import {createHash} from "node:crypto";
 import { db } from "../lib/db/firebase";
 import { businessDate, addDays, evidencePolicy } from "../lib/mobile/domain";
