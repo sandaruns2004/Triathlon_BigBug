@@ -32,32 +32,18 @@ export default function RouteMap({ trips = [] }: { trips?: Trip[] }) {
   useEffect(() => {
     setMounted(true);
     
-    // Initialize initial locations
+    // Initialize locations from prop data (Firestore-sourced)
     const initialLocations: Record<string, { lat: number, lng: number }> = {};
     trips.forEach(t => {
       if (t.lat && t.lng) initialLocations[t.vehicleId] = { lat: t.lat, lng: t.lng };
     });
     setVehicleLocations(initialLocations);
-    
-    // Connect to Socket.IO
-    import("socket.io-client").then(({ io }) => {
-      const socket = io();
-      
-      // Join depot room to hear all vehicle updates for this depot
-      socket.emit("join:depot", "Peliyagoda");
-      
-      socket.on("vehicle:location_update", (data: { vehicleId: string, lat: number, lng: number }) => {
-        setVehicleLocations(prev => ({
-          ...prev,
-          [data.vehicleId]: { lat: data.lat, lng: data.lng }
-        }));
-      });
-      
-      return () => {
-        socket.disconnect();
-      };
-    });
+
+    // NOTE: Socket.IO real-time updates require a persistent server (not Vercel serverless).
+    // For Vercel deployments, vehicle positions are refreshed via the parent component
+    // polling /api/dispatcher/overview on a timer. Add a polling interval here if needed.
   }, [trips]);
+
 
   if (!mounted) return <div className="card-panel bg-wp-pale w-full h-full animate-pulse" />;
 

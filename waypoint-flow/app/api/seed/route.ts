@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import { db } from "@/lib/db/firebase";
-import { parse } from "csv-parse/sync";
-import fs from "fs";
-import path from "path";
 
 /**
  * POST /api/seed
@@ -37,86 +34,37 @@ export async function POST(req: NextRequest) {
   results.users = users.length;
 
   // ── 2. VEHICLES ──────────────────────────────────────────────────────
-  const csvVehicles = path.join(process.cwd(), "public", "data", "vehicles.csv");
-  if (fs.existsSync(csvVehicles)) {
-    const rows = parse(fs.readFileSync(csvVehicles, "utf-8"), { columns: true, skip_empty_lines: true });
-    const vBatch = db.batch();
-    for (const v of rows as any[]) {
-      vBatch.set(db.collection("vehicles").doc(v.vehicle_id), {
-        vehicleId:        v.vehicle_id,
-        type:             v.type,
-        temp:             v.temp,
-        weightCapKg:      parseFloat(v.weight_cap_kg),
-        volumeCapM3:      parseFloat(v.volume_cap_m3),
-        fuelType:         v.fuel_type,
-        kmPerL:           parseFloat(v.km_per_l),
-        weeklyFuelQuotaL: parseInt(v.weekly_fuel_quota_l),
-        depot:            v.depot,
-        available:        true,
-        driverName:       null,
-        currentStatus:    "idle",
-        lat:              null,
-        lng:              null,
-      }, { merge: true });
-    }
-    await vBatch.commit();
-    results.vehicles = rows.length;
-  } else {
-    // Fallback demo vehicles if no CSV
-    const demoVehicles = [
-      { vehicleId: "WP-001", type: "truck", temp: "ambient", weightCapKg: 4000, volumeCapM3: 18, depot: "Peliyagoda", available: true, driverName: "Roshan J.", currentStatus: "on_route", lat: 6.93,   lng: 79.87 },
-      { vehicleId: "WP-014", type: "van",   temp: "reefer",  weightCapKg: 1500, volumeCapM3: 8,  depot: "Peliyagoda", available: true, driverName: "Kamal P.",  currentStatus: "loading",  lat: 6.92,   lng: 79.86 },
-      { vehicleId: "WP-022", type: "truck", temp: "ambient", weightCapKg: 4000, volumeCapM3: 18, depot: "Peliyagoda", available: true, driverName: "Nimal S.",  currentStatus: "planned",  lat: null,   lng: null  },
-      { vehicleId: "WP-031", type: "van",   temp: "ambient", weightCapKg: 1500, volumeCapM3: 8,  depot: "Kandy",      available: true, driverName: "Asanka W.", currentStatus: "on_route", lat: 7.2906, lng: 80.6337 },
-      { vehicleId: "WP-040", type: "truck", temp: "reefer",  weightCapKg: 4000, volumeCapM3: 18, depot: "Kandy",      available: false, driverName: null,       currentStatus: "idle",     lat: null,   lng: null  },
-    ];
-    const dvBatch = db.batch();
-    for (const v of demoVehicles) {
-      dvBatch.set(db.collection("vehicles").doc(v.vehicleId), v, { merge: true });
-    }
-    await dvBatch.commit();
-    results.vehicles = demoVehicles.length;
+  // NOTE: CSV file reading is not supported in Vercel serverless — using demo data directly.
+  const demoVehicles = [
+    { vehicleId: "WP-001", type: "truck", temp: "ambient", weightCapKg: 4000, volumeCapM3: 18, fuelType: "diesel", kmPerL: 8, weeklyFuelQuotaL: 200, depot: "Peliyagoda", available: true, driverName: "Roshan J.",  currentStatus: "on_route", lat: 6.93,   lng: 79.87 },
+    { vehicleId: "WP-014", type: "van",   temp: "reefer",  weightCapKg: 1500, volumeCapM3: 8,  fuelType: "diesel", kmPerL: 10, weeklyFuelQuotaL: 100, depot: "Peliyagoda", available: true, driverName: "Kamal P.",  currentStatus: "loading",  lat: 6.92,   lng: 79.86 },
+    { vehicleId: "WP-022", type: "truck", temp: "ambient", weightCapKg: 4000, volumeCapM3: 18, fuelType: "diesel", kmPerL: 8, weeklyFuelQuotaL: 200, depot: "Peliyagoda", available: true, driverName: "Nimal S.",  currentStatus: "planned",  lat: null,   lng: null  },
+    { vehicleId: "WP-031", type: "van",   temp: "ambient", weightCapKg: 1500, volumeCapM3: 8,  fuelType: "petrol", kmPerL: 12, weeklyFuelQuotaL: 100, depot: "Kandy",      available: true, driverName: "Asanka W.", currentStatus: "on_route", lat: 7.2906, lng: 80.6337 },
+    { vehicleId: "WP-040", type: "truck", temp: "reefer",  weightCapKg: 4000, volumeCapM3: 18, fuelType: "diesel", kmPerL: 7, weeklyFuelQuotaL: 200, depot: "Kandy",      available: false, driverName: null,       currentStatus: "idle",     lat: null,   lng: null  },
+  ];
+  const dvBatch = db.batch();
+  for (const v of demoVehicles) {
+    dvBatch.set(db.collection("vehicles").doc(v.vehicleId), v, { merge: true });
   }
+  await dvBatch.commit();
+  results.vehicles = demoVehicles.length;
 
   // ── 3. OUTLETS ──────────────────────────────────────────────────────
-  const csvOutlets = path.join(process.cwd(), "public", "data", "outlets.csv");
-  if (fs.existsSync(csvOutlets)) {
-    const rows = parse(fs.readFileSync(csvOutlets, "utf-8"), { columns: true, skip_empty_lines: true });
-    for (let i = 0; i < rows.length; i += 400) {
-      const oBatch = db.batch();
-      for (const o of (rows as any[]).slice(i, i + 400)) {
-        oBatch.set(db.collection("outlets").doc(o.outlet_id), {
-          outletId:          o.outlet_id,
-          name:              o.name,
-          brand:             o.brand,
-          district:          o.district,
-          depot:             o.depot,
-          dockType:          o.dock_type,
-          parkingConstraint: o.parking_constraint,
-          mallWindow:        o.mall_window || null,
-          windowOpenTime:    o.window_open_time,
-          windowCloseTime:   o.window_close_time,
-        }, { merge: true });
-      }
-      await oBatch.commit();
-    }
-    results.outlets = rows.length;
-  } else {
-    // Fallback demo outlets
-    const demoOutlets = [
-      { outletId: "OUT005", name: "Fresh Mart Nugegoda",    brand: "Fresh", district: "Colombo",    depot: "Peliyagoda", dockType: "street",    parkingConstraint: "normal",   windowOpenTime: "08:00", windowCloseTime: "17:00" },
-      { outletId: "OUT012", name: "Style Hub Bambalapitiya", brand: "Style", district: "Colombo",   depot: "Peliyagoda", dockType: "rear_dock", parkingConstraint: "normal",   windowOpenTime: "09:00", windowCloseTime: "17:00" },
-      { outletId: "OUT019", name: "Tech World Kandy",        brand: "Tech",  district: "Kandy",     depot: "Kandy",      dockType: "mall_bay",  parkingConstraint: "mall_dock", windowOpenTime: "10:00", windowCloseTime: "21:00" },
-      { outletId: "OUT027", name: "Fresh Mart Kelaniya",     brand: "Fresh", district: "Gampaha",   depot: "Peliyagoda", dockType: "street",    parkingConstraint: "van_only",  windowOpenTime: "07:00", windowCloseTime: "12:00" },
-      { outletId: "OUT034", name: "Style Hub Negombo",       brand: "Style", district: "Gampaha",   depot: "Peliyagoda", dockType: "rear_dock", parkingConstraint: "normal",   windowOpenTime: "09:00", windowCloseTime: "17:00" },
-    ];
-    const doBatch = db.batch();
-    for (const o of demoOutlets) {
-      doBatch.set(db.collection("outlets").doc(o.outletId), o, { merge: true });
-    }
-    await doBatch.commit();
-    results.outlets = demoOutlets.length;
+  // NOTE: CSV file reading is not supported in Vercel serverless — using demo data directly.
+  const demoOutlets = [
+    { outletId: "OUT005", name: "Fresh Mart Nugegoda",     brand: "Fresh", district: "Colombo",  depot: "Peliyagoda", dockType: "street",    parkingConstraint: "normal",    windowOpenTime: "08:00", windowCloseTime: "17:00" },
+    { outletId: "OUT012", name: "Style Hub Bambalapitiya", brand: "Style", district: "Colombo",  depot: "Peliyagoda", dockType: "rear_dock", parkingConstraint: "normal",    windowOpenTime: "09:00", windowCloseTime: "17:00" },
+    { outletId: "OUT019", name: "Tech World Kandy",        brand: "Tech",  district: "Kandy",    depot: "Kandy",      dockType: "mall_bay",  parkingConstraint: "mall_dock", windowOpenTime: "10:00", windowCloseTime: "21:00" },
+    { outletId: "OUT027", name: "Fresh Mart Kelaniya",     brand: "Fresh", district: "Gampaha",  depot: "Peliyagoda", dockType: "street",    parkingConstraint: "van_only",  windowOpenTime: "07:00", windowCloseTime: "12:00" },
+    { outletId: "OUT034", name: "Style Hub Negombo",       brand: "Style", district: "Gampaha",  depot: "Peliyagoda", dockType: "rear_dock", parkingConstraint: "normal",    windowOpenTime: "09:00", windowCloseTime: "17:00" },
+    { outletId: "OUT045", name: "Fresh Mart Wattala",      brand: "Fresh", district: "Gampaha",  depot: "Peliyagoda", dockType: "street",    parkingConstraint: "van_only",  windowOpenTime: "07:00", windowCloseTime: "12:00" },
+  ];
+  const doBatch = db.batch();
+  for (const o of demoOutlets) {
+    doBatch.set(db.collection("outlets").doc(o.outletId), o, { merge: true });
   }
+  await doBatch.commit();
+  results.outlets = demoOutlets.length;
 
   // ── 4. TRIPS (today's demo plan) ────────────────────────────────────
   const today = new Date().toISOString().split("T")[0];

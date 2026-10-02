@@ -1,0 +1,16 @@
+{
+  "name": "Waypoint Flow",
+  "short_name": "WaypointFlow",
+  "description": "Waypoint Group's delivery planning and execution platform",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#146B45",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "48x48",
+      "type": "image/x-icon"
+    }
+  ]
+}
