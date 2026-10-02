@@ -23,6 +23,9 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id; token.role = principal.role; token.depot = principal.depot;
         token.outletId = principal.outletId; token.authVersion = principal.authVersion;
       }
+      // Only verify against Firestore when a real session token exists.
+      // Skipping this for unauthenticated requests prevents a 500 when token.id is undefined.
+      if (!token.id) return token;
       try {
         const doc = await db.collection("users").doc(String(token.id)).get();
         if (!doc.exists) throw new Error("Removed account");
