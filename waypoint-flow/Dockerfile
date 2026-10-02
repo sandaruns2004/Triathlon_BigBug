@@ -1,18 +1,27 @@
-FROM node:24-alpine
+FROM node:20-alpine AS deps
 WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production
 
-# Install dependencies
+FROM node:20-alpine AS builder
+WORKDIR /app
 COPY package*.json ./
 RUN npm ci
-
-# Copy source
 COPY . .
-
-# Build the Next.js app
+ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
-# Expose port and run the custom server
-EXPOSE 3000
+FROM node:20-alpine AS runner
+WORKDIR /app
 ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 ENV HOSTNAME=0.0.0.0
-CMD ["node", "server.js"]
+ENV PORT=3000
+
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/package.json ./package.json
+COPY --from=deps /app/node_modules ./node_modules
+
+EXPOSE 3000
+CMD ["node_modules/.bin/next", "start"]

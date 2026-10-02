@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  check:
+    name: Typecheck, Lint & Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Production build (smoke test)
+        run: npm run build
+        env:
+          # Dummy values so Firebase Admin doesn't crash during build
+          FIREBASE_PROJECT_ID: demo-ci
+          FIREBASE_PRIVATE_KEY: "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC7placeholder\n-----END PRIVATE KEY-----\n"
+          FIREBASE_CLIENT_EMAIL: ci@demo-ci.iam.gserviceaccount.com
+          NEXTAUTH_SECRET: ci-placeholder-secret-not-real-32chars
+          NEXTAUTH_URL: http://localhost:3000
+          SEED_SECRET: ci-seed-secret
+          AWS_REGION: ap-southeast-1
+          AWS_ACCESS_KEY_ID: AKIAPLACEHOLDER
+          AWS_SECRET_ACCESS_KEY: placeholder
+          AWS_S3_BUCKET: ci-bucket
