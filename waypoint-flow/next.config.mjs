@@ -14,6 +14,8 @@ const nextConfig = {
       "bcryptjs",
       "@google-cloud/firestore",
       "google-gax",
+      "jwks-rsa",
+      "jose",
     ],
   },
 
