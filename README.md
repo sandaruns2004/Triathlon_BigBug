@@ -3,6 +3,19 @@
 > Organised by [RootCode](https://tech-triathlon.rootcode.ai/) · Contact: tech-triathlon@rootcode.io  
 > **Company:** Waypoint Group · **Product:** Waypoint Flow
 
+## 🌐 Live Demo
+
+**→ https://waypointflow.vercel.app**
+
+| Role | Email | Password | Viewport |
+|---|---|---|---|
+| Dispatcher | dispatcher@waypoint.lk | waypoint2026 | Desktop |
+| Loader | loader@waypoint.lk | waypoint2026 | Desktop |
+| Driver | driver@waypoint.lk | waypoint2026 | Chrome 390px |
+| Store Manager | store@waypoint.lk | waypoint2026 | Mobile or Desktop |
+
+> **Mobile tip:** Open Chrome DevTools → Device Toolbar → 390 × 844 for Driver and Store Manager screens.
+
 ---
 
 ## ⏰ Deadlines

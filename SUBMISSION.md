@@ -5,7 +5,7 @@
 
 ## Live Demo
 
-- **URL:** [TO BE FILLED — Vercel deployment URL]
+- **URL:** https://waypointflow.vercel.app
 - **GitHub:** https://github.com/sandaruns2004/Triathlon_BigBug
 
 ---
