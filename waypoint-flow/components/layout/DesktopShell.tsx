@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 import Link from "next/link";
 import {
   LayoutDashboard,
@@ -33,6 +34,10 @@ export function DesktopShell({ children }: DesktopShellProps) {
     { label: "Fleet",      href: "/dispatcher/fleet", icon: <Truck size={20} /> },
     { label: "Staff",      href: "/dispatcher/staff", icon: <Users size={20} /> },
   ];
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [hasUnread, setHasUnread] = useState(true);
 
   return (
     <div className="min-h-screen bg-wp-canvas flex">
@@ -86,19 +91,38 @@ export function DesktopShell({ children }: DesktopShellProps) {
           </div>
 
           <div className="flex items-center gap-6">
-            <div className="relative">
+            <form onSubmit={(e) => { e.preventDefault(); alert("Global search is coming in Phase 4. Currently viewing: " + searchQuery); }} className="relative">
               <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-wp-muted" />
               <input
                 type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search orders, trucks..."
                 className="pl-9 pr-4 py-2 bg-wp-canvas border border-wp-border rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-wp-action w-[240px]"
               />
-            </div>
+            </form>
 
-            <button className="relative text-wp-muted hover:text-wp-ink transition-colors">
-              <Bell size={20} />
-              <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full border border-white" />
-            </button>
+            <div className="relative">
+              <button 
+                onClick={() => { setShowNotifications(!showNotifications); setHasUnread(false); }}
+                className="relative text-wp-muted hover:text-wp-ink transition-colors"
+              >
+                <Bell size={20} />
+                {hasUnread && <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full border border-white" />}
+              </button>
+              
+              {showNotifications && (
+                <div className="absolute right-0 mt-2 w-72 bg-white rounded-card shadow-lg border border-wp-border overflow-hidden z-50">
+                  <div className="px-4 py-3 border-b border-wp-border bg-wp-canvas">
+                    <h3 className="font-semibold text-sm text-wp-ink">Notifications</h3>
+                  </div>
+                  <div className="p-4 text-sm text-wp-muted">
+                    <p className="mb-2">⚠️ <strong className="text-wp-ink">Loading Shortfall</strong></p>
+                    <p>WP-014 is missing 2 cases for OUT045. Check Exception Queue.</p>
+                  </div>
+                </div>
+              )}
+            </div>
 
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-full bg-wp-pale text-wp-green flex items-center justify-center font-bold text-sm">
