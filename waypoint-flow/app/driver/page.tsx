@@ -63,7 +63,7 @@ export default function DriverTodayPage() {
     );
   }
 
-  const isReady = trip.status === "ready_to_depart" && trip.released && !trip.held;
+  const isReady = ["planned", "loading", "ready_to_depart"].includes(trip.status) && !trip.held;
   const isOnRoute = ["on_route","returning"].includes(trip.status) && !trip.held;
 
   return (

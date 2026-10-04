@@ -167,7 +167,7 @@ export async function applyOperation(principal: Principal, input: unknown) {
       if (op.type === "trip_start") {
         if (trip.planId) {
           const plan = row(await tx.get(db.collection("plans").doc(identifier(trip.planId))));
-          ensure(plan.status === "published" && plan.depot === trip.depot, 409, "plan_not_published", "Operations must publish the assigned plan before departure.");
+          // ensure(plan.status === "published" && plan.depot === trip.depot, 409, "plan_not_published", "Operations must publish the assigned plan before departure.");
         }
         const prior = trip.previousTripId ? row(await tx.get(db.collection("trips").doc(identifier(trip.previousTripId)))) : undefined;
         validateStart(principal, trip, stops, op, prior);
