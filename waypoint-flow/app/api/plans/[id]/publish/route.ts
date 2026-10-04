@@ -2,6 +2,7 @@ import {db} from "@/lib/db/firebase";
 import {webRoute} from "@/lib/mobile/web";
 import {ensure,requireRole} from "@/lib/mobile/domain";
 import {identifier} from "@/lib/mobile/errors";
+import {writeAudit} from "@/lib/mobile/audit";
 export const PATCH=webRoute(async(_req,params,p)=>{
   requireRole(p,"dispatcher");const ref=db.collection("plans").doc(identifier(params.id));
   await db.runTransaction(async tx=>{
@@ -15,5 +16,6 @@ export const PATCH=webRoute(async(_req,params,p)=>{
     for(const order of orders.docs)tx.create(db.collection("domain_events").doc("publish-"+ref.id+"-"+order.id),{
       type:"plan_published",entityId:order.id,depot:p.depot,outletId:order.data().outletId,driverId:null,
       published:false,createdAt:new Date().toISOString()});
+    writeAudit(tx,p,{action:"plan_published",entityType:"plan",entityId:ref.id,depot:p.depot});
   });return {success:true};
 });

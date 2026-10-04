@@ -4,14 +4,16 @@ import { z } from "zod";
 import { randomUUID } from "node:crypto";
 import { identifier, ApiError } from "./errors";
 import { ensure, requireRole, addDays, businessDate, digest, validateProof, requireVersion, evidencePolicy, type RecordData } from "./domain";
+import { writeAudit } from "./audit";
 
 function requireDepot(principal: Principal, record: RecordData) {
   ensure(principal.depot && principal.depot === record.depot, 403, "forbidden", "This work belongs to another depot.");
 }
-function event(tx: FirebaseFirestore.Transaction, type: string, entityId: string, depot: string, outletId: string | null = null, driverId: string | null = null) {
+function event(tx: FirebaseFirestore.Transaction, principal: Principal, type: string, entityId: string, depot: string, outletId: string | null = null, driverId: string | null = null) {
   const eventId = randomUUID();
   tx.create(db.collection("domain_events").doc(eventId), { eventId, type, entityId, depot, outletId, driverId,
     published: false, createdAt: new Date().toISOString() });
+  writeAudit(tx, principal, { action: type, entityType: "operation", entityId, depot, outletId });
 }
 export async function assignTrip(principal: Principal, tripId: string, input: unknown) {
   requireRole(principal, "dispatcher");
@@ -28,7 +30,7 @@ export async function assignTrip(principal: Principal, tripId: string, input: un
     if (trip.driverId) history.push({ driverId: trip.driverId, assignmentVersion: trip.assignmentVersion ?? 0, released: trip.released ?? false, endedAt: new Date().toISOString() });
     tx.update(ref, { driverId: body.driverId, driverName: driver.data()!.name, assignmentVersion: version, assignmentHistory: history,
       assignmentReason: body.reason, assignedAt: new Date().toISOString(), assignedBy: principal.userId });
-    event(tx, "trip_assigned", tripId, trip.depot, null, body.driverId);
+    event(tx, principal, "trip_assigned", tripId, trip.depot, null, body.driverId);
   });
   return { status: "accepted" };
 }
@@ -50,7 +52,7 @@ export async function loadStop(principal: Principal, stopId: string) {
     tx.update(ref, { status: "loaded", loadingState: "loaded", loadedAt: new Date().toISOString(), loadedById: principal.userId });
     tx.update(tripRef, { status: allLoaded ? "ready_to_depart" : "loading", released: allLoaded, held: false,
       releaseVersion: (trip!.releaseVersion ?? 0) + (allLoaded && !trip!.released ? 1 : 0) });
-    event(tx, allLoaded ? "trip_released" : "loading_updated", stop.tripId, trip!.depot, null, trip!.driverId ?? null);
+    event(tx, principal, allLoaded ? "trip_released" : "loading_updated", stop.tripId, trip!.depot, null, trip!.driverId ?? null);
   });
   return { success: true, allLoaded };
 }
@@ -73,7 +75,7 @@ export async function reportShortfall(principal: Principal, input: unknown) {
       tripId: body.tripId, stopId: body.stopId, evidenceIds: body.evidenceIds, vehicleId: trip.vehicleId, depot: trip.depot, resolved: false, reportedById: principal.userId, createdAt: new Date().toISOString() });
     tx.update(stopRef, { shortfallOpen: true, shortfallId: exceptionId, loadingState: "shortfall", status: "shortfall_reported" });
     tx.update(tripRef, { held: true, holdKind: "shortfall", released: false, status: "loading", releaseVersion: (trip.releaseVersion ?? 0) + 1 });
-    event(tx, "loading_shortfall", body.tripId, trip.depot, null, trip.driverId ?? null);
+    event(tx, principal, "loading_shortfall", body.tripId, trip.depot, null, trip.driverId ?? null);
   });
   return { success: true, exceptionId };
 }
@@ -108,7 +110,7 @@ export async function resolveShortfall(principal: Principal, exceptionId: string
     tx.update(exRef, { resolved: true, resolvedById: principal.userId, resolution: body.reason, resolvedAt: new Date().toISOString() });
     tx.update(tripRef, { routeRevision: (trip.routeRevision ?? 0) + 1, held: otherShortfall, holdKind: otherShortfall ? "shortfall" : null,
       status: allLoaded ? "ready_to_depart" : "loading", released: allLoaded, releaseVersion: (trip.releaseVersion ?? 0) + 1 });
-    event(tx, "shortfall_resolved", stop.orderId, trip.depot, stop.outletId, trip.driverId ?? null);
+    event(tx, principal, "shortfall_resolved", stop.orderId, trip.depot, stop.outletId, trip.driverId ?? null);
   });
   return { status: "accepted" };
 }
@@ -131,7 +133,7 @@ export async function deferOrder(principal: Principal, orderId: string, input: u
     tx.update(ref, { status: "deferred", deferralReason: body.reason, revisedDate, proposedDate: revisedDate, planDate: revisedDate,
       history: [...(order.history ?? []), { type: "deferred", reason: body.reason, proposedDate: revisedDate, actorId: principal.userId, at: new Date().toISOString() }],
       updateVersion: (order.updateVersion ?? 0) + 1, deferredConfirmedAt: new Date().toISOString() });
-    event(tx, "order_deferred", orderId, order.depot, order.outletId);
+    event(tx, principal, "order_deferred", orderId, order.depot, order.outletId);
   });
   return { success: true };
 }
@@ -146,7 +148,7 @@ export async function resolveHold(principal: Principal, tripId: string, input: u
     ensure(trip.status === "held" && !stops.docs.some(d => d.data().shortfallOpen), 409, "hold_not_eligible", "Resolve loading/route prerequisites first.");
     tx.update(ref, { held: false, status: trip.previousStatus === "returning" ? "returning" : "on_route", holdResolution: body.reason,
       holdResolvedBy: principal.userId, holdResolvedAt: new Date().toISOString() });
-    event(tx, "hold_resolved", tripId, trip.depot, null, trip.driverId);
+    event(tx, principal, "hold_resolved", tripId, trip.depot, null, trip.driverId);
   });
   return { status: "accepted" };
 }
@@ -174,12 +176,12 @@ export async function restoreOrder(principal: Principal, orderId: string, input:
       tx.update(previousTrip.ref,{routeRevision:(previousTrip.data()!.routeRevision??0)+1,releaseVersion:(previousTrip.data()!.releaseVersion??0)+1,
         stopCount:remaining.length,held:remaining.some(d=>d.data().shortfallOpen),holdKind:remaining.some(d=>d.data().shortfallOpen)?"shortfall":null,
         released,status:remaining.length===0?"cancelled":released?"ready_to_depart":"loading"});
-      event(tx,"route_updated",previousTrip.id,principal.depot!,null,previousTrip.data()!.driverId??null);
+      event(tx,principal,"route_updated",previousTrip.id,principal.depot!,null,previousTrip.data()!.driverId??null);
     }
     tx.update(orderRef,{status:"pending",tripId:null,stopId:null,planId:null,planDate:body.serviceDate,revisedDate:body.serviceDate,
       fulfillmentVersion:(order.fulfillmentVersion??0)+1,updateVersion:(order.updateVersion??0)+1,
       history:[...(order.history??[]),{type:"restored_to_planning",reason:body.reason,serviceDate:body.serviceDate,actorId:principal.userId,at:new Date().toISOString()}]});
-    event(tx,"order_restored",orderId,principal.depot!,order.outletId);
+    event(tx,principal,"order_restored",orderId,principal.depot!,order.outletId);
   });
   return {status:"accepted"};
 }
@@ -222,8 +224,8 @@ export async function approveReview(principal: Principal, reviewId: string, inpu
       ...(trip.held?{}:{status:resolved===active.length?"returning":"on_route"})});
     const receipt={reviewId,status:"approved_amendment",proofId:proof.proofId,orderId:orderRef.id,approvedById:principal.userId,receivedAt};
     tx.update(reviewRef,{status:"approved_amendment",resolution:body.reason,decisionHash,receipt,resolvedById:principal.userId,resolvedAt:receivedAt});
-    event(tx,"delivery_amended",orderRef.id,principal.depot!,stop.outletId,trip.driverId);
-    event(tx,"review_resolved",reviewId,principal.depot!,null,review.userId);
+    event(tx,principal,"delivery_amended",orderRef.id,principal.depot!,stop.outletId,trip.driverId);
+    event(tx,principal,"review_resolved",reviewId,principal.depot!,null,review.userId);
     return receipt;
   });
 }
@@ -237,7 +239,7 @@ export async function resolveReview(principal: Principal, reviewId: string, inpu
     ensure(review.status === "awaiting_operations", 409, "already_resolved", "This review is already resolved.");
     // Reviewing evidence never silently overwrites canonical delivery or marks the original operation accepted.
     tx.update(ref, { status: body.decision, resolution: body.reason, resolvedById: principal.userId, resolvedAt: new Date().toISOString() });
-    event(tx, "review_resolved", reviewId, review.depot, null, review.userId);
+    event(tx, principal, "review_resolved", reviewId, review.depot, null, review.userId);
   });
   return { status: "accepted" };
 }

@@ -18,6 +18,10 @@ See [code recipes](CODE_Implementation_Recipes.md), [verification evidence](../w
 **Outcome:** web operations and both native roles see coherent, recoverable updates from committed server state.  
 **Dependencies:** Phases 3–5. **Estimate:** 1–2 working days. **Owners:** backend, Flutter and QA.
 
+### Role-scoped audit history — 4 October 2026
+
+Accepted shared mobile operations, Dispatcher/Loader web operations, and plan allocation/publication now write a transaction-bound, metadata-only record in `audit_logs`. Each record contains the action, entity ID/type, actor role/user ID, depot/outlet scope, optional operation ID and server timestamp. It deliberately excludes credentials, payloads, notes, reasons, proofs, signatures, photos and evidence IDs. Only an authenticated Dispatcher may read the most recent entries, and the query is limited to that Dispatcher's depot. The Dispatcher Operations page renders this safe summary; Driver and Store Manager apps retain their own scoped activity/sync views rather than receiving a depot audit feed.
+
 ## Cross-role journeys
 
 | Trigger | Native consequence | Required server work |
@@ -40,6 +44,7 @@ See [code recipes](CODE_Implementation_Recipes.md), [verification evidence](../w
 - [x] Fetch and cache notifications through the versioned API. Deep-link to the authorized order/trip/issue, including cold-start and signed-out cases.
 - [x] Mark notifications read idempotently. Deduplicate repeated delivery/deferral events.
 - [x] Poll or refresh on app resume and after mutations as the MVP recovery mechanism.
+- [x] Write metadata-only audit entries within the same transaction as accepted native/web actions and plans; restrict audit history to the authenticated Dispatcher's current depot.
 
 ## Realtime channel — deferred from MVP
 
@@ -108,3 +113,5 @@ Kill the notification publisher after a business transaction commits. On restart
 ## Execution evidence and remaining gate
 
 Software/test evidence is recorded in [phase-2-7-verification.md](../waypoint-mobile/docs/phase-2-7-verification.md). The code paths above replace the original proposed helpers. No production deployment, signing credential, physical camera acceptance or human policy approval is claimed. Keep this phase open until its applicable remaining release checks pass.
+
+On 4 October 2026, five isolated-emulator service tests passed, including audit redaction and cross-role/depot denial checks; TypeScript checking also passed. No hosted API, device UI, Flutter or release test was rerun for this audit change.

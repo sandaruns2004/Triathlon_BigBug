@@ -1,6 +1,6 @@
 # Mobile phase work list
 
-Last updated: **1 October 2026**. Flutter/Dart, Android first. Driver/Store native; Dispatcher/Loader web. [Executed evidence](../waypoint-mobile/docs/phase-2-7-verification.md), [review/fixes](../waypoint-mobile/docs/mobile-review-and-fixes.md) and [updated development APK](../waypoint-mobile/build/releases/waypoint-0.1.0-development-20261001.apk).
+Last updated: **4 October 2026**. Flutter/Dart, Android first. Driver/Store native; Dispatcher/Loader web. [Executed evidence](../waypoint-mobile/docs/phase-2-7-verification.md), [review/fixes](../waypoint-mobile/docs/mobile-review-and-fixes.md) and [updated development APK](../waypoint-mobile/build/releases/waypoint-0.1.0-development-20261001.apk).
 
 ## Phase progress
 
@@ -18,8 +18,8 @@ iOS source/tooling was added on 1 October. See [iOS evidence](../waypoint-mobile
 | 3 | [Driver route and trip workflow](03_Driver_Route_and_Trip_Workflow.md) | Implemented — verification pending | Real assigned cache/manifests, publication/loading/start, parked stops/navigation/issues, route comparison, breakdown/closeout/Trip 2; target-phone offline/navigation acceptance pending |
 | 4 | [Proof of delivery and offline sync](04_Proof_of_Delivery_and_Offline_Sync.md) | Implemented — verification pending | Durable POD/photos/signature, immutable outbox, actual upload/finalize/replay and audited reviews tested; physical camera/process-kill/storage and hosted S3 pending |
 | 5 | [Store ordering, tracking and receipt](05_Store_Ordering_Tracking_and_Receipt.md) | Implemented — verification pending | Real catalogue/drafts/orders, D3 restoration/history, receipts/issues and scoped digital note/photos; full future-date planning-to-receipt UI rehearsal pending |
-| 6 | [Cross-role integration and notifications](06_Cross_Role_Integration_and_Notifications.md) | Implemented — verification pending | Shared web/native mutations, Dispatcher/Loader decisions, durable scoped sequence updates and refresh recovery tested; hosted worker/full UI rehearsal pending |
-| 7 | [Testing, release and handoff](07_Testing_Release_and_Handoff.md) | In progress | 48 Flutter tests + native login/route smoke and updated connected APK verified on 1 October; historical 4 domain + 1 HTTP and connected journey checks on 30 September; production signing/phone/hosted matrix pending |
+| 6 | [Cross-role integration and notifications](06_Cross_Role_Integration_and_Notifications.md) | Implemented — verification pending | Shared web/native mutations, Dispatcher/Loader decisions, depot-scoped metadata audit history, durable scoped sequence updates and refresh recovery tested; hosted worker/full UI rehearsal pending |
+| 7 | [Testing, release and handoff](07_Testing_Release_and_Handoff.md) | In progress | 48 Flutter tests + native login/route smoke and updated connected APK verified on 1 October; 5 local emulator domain/audit tests on 4 October, historical 1 HTTP and connected journey checks on 30 September; production signing/phone/hosted matrix pending |
 | 8 | [iOS platform and compatibility](08_iOS_Platform_and_Compatibility.md) | Implemented — verification pending | Swift/Xcode schemes, Apple config, permissions, camera/Keychain/file protection, branding/privacy and Mac CI; 40 shared Flutter tests/portable checks pass; Xcode/simulator/iPhone gates pending |
 | 9 | [iPhone testing and release](09_iOS_Testing_and_Release.md) | In progress | Protected IPA export, signing validation and handoff; 5 signing-validator tests pass; Mac CI, authorized signing, TestFlight and physical iPhone matrix pending |
 
@@ -90,6 +90,7 @@ Only increment the complete count after the relevant remaining gate passes. Reop
 
 | Date | Change | Evidence / limit |
 |---|---|---|
+| 2026-10-04 | Added metadata-only audit records for web/native operations and planning; verified Dispatcher depot scope and redaction | [Phase 2–7 evidence](../waypoint-mobile/docs/phase-2-7-verification.md): 5 local emulator service tests and TypeScript check; no current device, Flutter, hosted or release run |
 | 2026-10-01 | Reviewed/fixed mobile recovery and form navigation; added eight regression tests and native app smoke coverage | [Review/fixes](../waypoint-mobile/docs/mobile-review-and-fixes.md): 48 Flutter tests; physical/hosted/iOS/release gates remain open |
 | 2026-10-01 | Implemented iOS platform/shared compatibility and IPA tooling; added Phases 8–9 | [iOS evidence](../waypoint-mobile/docs/ios-verification.md): 40 Flutter + 5 signing-validator tests and portable checks; no Xcode/simulator/phone/signing run |
 | 2026-10-01 | Re-ran automated checks (dart format, flutter analyze, flutter test --flavor development); all 35 tests pass; no source changes | Re-run only; no integration test, physical device or hosted API run; remaining gates unchanged |

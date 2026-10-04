@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { 
-  Users, AlertTriangle, Truck, RefreshCw, CalendarClock, PackageOpen, FileText, CheckCircle2, ChevronRight, MessageSquareWarning, ShieldCheck, MapPin
+  Users, AlertTriangle, Truck, RefreshCw, CalendarClock, PackageOpen, FileText, CheckCircle2, ChevronRight, MessageSquareWarning, ShieldCheck, MapPin, ClipboardList
 } from "lucide-react";
 
 type Row = Record<string, any>;
@@ -333,6 +333,26 @@ export default function OperationsPage() {
         </div>
 
       </div>
+
+      <section className="card-panel overflow-hidden">
+        <div className="p-4 border-b border-wp-border bg-slate-50 flex items-center gap-2">
+          <ClipboardList size={18} className="text-wp-green" />
+          <div>
+            <h2 className="font-bold text-wp-ink text-sm">Recent audit activity</h2>
+            <p className="text-xs text-wp-muted mt-0.5">Metadata-only entries for this depot. Proofs, notes, photos and credentials are never included.</p>
+          </div>
+        </div>
+        <div className="divide-y divide-wp-border">
+          {data.audit?.length === 0 && <p className="p-4 text-sm text-wp-muted italic">No recorded activity yet.</p>}
+          {(data.audit ?? []).map((entry: Row) => (
+            <div key={entry.auditId} className="p-3 flex flex-wrap items-center justify-between gap-2 text-sm">
+              <span className="font-medium text-wp-ink">{String(entry.action).replaceAll("_", " ")}</span>
+              <span className="text-wp-muted">{entry.entityType}: {entry.entityId}</span>
+              <span className="text-xs text-wp-muted">{entry.actorRole} · {new Date(entry.createdAt).toLocaleString()}</span>
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }

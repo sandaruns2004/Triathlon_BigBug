@@ -2,6 +2,17 @@
 
 Recorded 30 September 2026. These are executed local results, not a hosted deployment or physical-phone release certificate.
 
+## Audit-log role review — 4 October 2026
+
+The shared server path used by the native Driver/Store apps and the Dispatcher/Loader web pages now writes transaction-bound `audit_logs` records for accepted operations, plus Dispatcher plan allocation/publication. Records are metadata only: action, entity/type, actor role/user ID, depot/outlet scope, optional operation ID and timestamp. They contain no request payload, credential, note, reason, proof, signature, photo or evidence ID. The Operations API and UI expose the recent list only to an authenticated Dispatcher and only for that Dispatcher's depot.
+
+| Check | Result | Evidence and limit |
+|---|---|---|
+| `npx tsc --noEmit --incremental false` | PASS | TypeScript check after audit implementation |
+| `npx tsx --test tests/mobile-service.test.ts` | PASS, 5 tests | Isolated Auth/Firestore emulator; validates Store payload redaction, Loader activity capture, Store denial and other-depot Dispatcher denial |
+
+This review did not run Flutter, an Android/iOS build, hosted API, physical device or release signing checks. The audit log is an operational metadata trail, not crash telemetry or a replacement for privacy/retention policy.
+
 ## Implemented scope
 
 - Phase 2: shared bcrypt credential verification/rate limit; Firebase custom-token SDK bridge, current-profile/authVersion/revocation checks, account management CLI, owner-scoped v1 contracts, role/deep-link guards and bounded offline access.

@@ -6,6 +6,7 @@ import { ApiError, identifier } from "./errors";
 import { operationSchema, operationKey, digest, ensure, requireRole, assertTripOwner, assertOrderOwner,
   requireVersion, validateStart, validateProof, validateOrder, businessDate, serviceOptions, evidencePolicy,
   type Operation, type RecordData } from "./domain";
+import { writeAudit } from "./audit";
 
 const row = (snap: FirebaseFirestore.DocumentSnapshot): RecordData => {
   ensure(snap.exists, 404, "not_found", "The requested record was not found.");
@@ -236,6 +237,14 @@ export async function applyOperation(principal: Principal, input: unknown) {
     const receipt = { operationId: op.operationId, status: "accepted", entityId, versions, serverReceivedAt: now, ...result };
     tx.create(opRef, { userId: principal.userId, operationId: op.operationId, payloadHash, operation: op, receipt });
     domainEvent(tx, key, event);
+    writeAudit(tx, principal, {
+      action: op.type,
+      entityType: "operation",
+      entityId: event.entityId ?? entityId,
+      operationId: op.operationId,
+      depot: event.depot,
+      outletId: event.outletId,
+    });
     return receipt;
   });
 }

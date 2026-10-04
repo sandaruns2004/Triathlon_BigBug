@@ -3,6 +3,7 @@ import { allocate, type Order, type Vehicle } from "@/lib/allocation/engine";
 import { webRoute } from "@/lib/mobile/web";
 import { identifier } from "@/lib/mobile/errors";
 import { businessDate, digest, ensure, requireRole, evidencePolicy } from "@/lib/mobile/domain";
+import { writeAudit } from "@/lib/mobile/audit";
 const DISTRICTS={Colombo:{depotToDistrictFreeflowMin:20,interStopFreeflowMin:15},Gampaha:{depotToDistrictFreeflowMin:30,interStopFreeflowMin:20},Kandy:{depotToDistrictFreeflowMin:10,interStopFreeflowMin:12}};
 const ALLOWANCES={"Fresh:street":10,"Fresh:rear_dock":15,"Fresh:mall_bay":20,"Style:street":15,"Style:rear_dock":20,"Style:mall_bay":25,"Tech:street":20,"Tech:rear_dock":25,"Tech:mall_bay":30};
 export const POST=webRoute(async(_req,params,p)=>{
@@ -54,6 +55,7 @@ export const POST=webRoute(async(_req,params,p)=>{
     }
     for(const order of deferred)tx.update(db.collection("orders").doc(order.orderId),{status:"needs_deferral",deferralSuggestion:"Demand exceeds capacity"});
     tx.update(ref,{tripCount:trips.length,deferredCount:deferred.length,status:"allocated"});
+    writeAudit(tx,p,{action:"plan_allocated",entityType:"plan",entityId:planId,depot:p.depot});
   });
   return {success:true,tripsGenerated:trips.length,ordersDeferred:deferred.length};
 });

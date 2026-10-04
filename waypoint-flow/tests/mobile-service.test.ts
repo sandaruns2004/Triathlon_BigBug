@@ -10,6 +10,7 @@ import { loadStop, reportShortfall, resolveShortfall, deferOrder, assignTrip, re
 import { uploadSession, putLocalMedia, finalizeMedia, viewMedia } from "../lib/mobile/media";
 import { validateProof, businessDate, operationKey, type Operation } from "../lib/mobile/domain";
 import { ApiError } from "../lib/mobile/errors";
+import { auditEntries } from "../lib/mobile/audit";
 
 async function principal(id: string) { return currentPrincipal(id, (await db.collection("users").doc(id).get()).data()!); }
 const failure = (status: number) => (error: unknown) => error instanceof ApiError && error.status === status;
@@ -199,4 +200,41 @@ test("canonical Store creation, audited historical amendment and deferral restor
   assert.equal(restored.status,"pending");assert.equal(restored.history.at(-1).type,"restored_to_planning");
   assert.ok(restored.history.some((h:any)=>h.type==="deferred"));
   await assert.rejects(restoreOrder(dispatcher,"TEST-DEFERRED",{reason:"Duplicate restoration",serviceDate:catalogue.serviceOptions.serviceDates[0]}),failure(409));
+});
+
+test("audit history is metadata-only and restricted to the current depot Dispatcher", async () => {
+  await seedMobileTestData();
+  const store = await principal("test-store"), loader = await principal("test-loader"), dispatcher = await principal("test-dispatcher");
+  const catalogue = await storeCatalogue(store);
+  const privateNote = "Private receiving instruction that must not enter the audit trail";
+  const create = op("store_order_created", { payload: {
+    requestedDate: catalogue.serviceOptions.serviceDates[0], catalogueRevision: catalogue.revision,
+    serviceOptionsVersion: catalogue.serviceOptions.version, note: privateNote,
+    lines: [{ productId: "MILK-CASE", quantity: 3, unit: "case" }],
+  } });
+  const created = await applyOperation(store, create);
+  await loadStop(loader, "TEST-STOP-1");
+
+  const entries = await auditEntries(dispatcher);
+  const storeEntry = entries.find(entry => entry.operationId === create.operationId)!;
+  assert.ok(storeEntry);
+  assert.equal(storeEntry.action, "store_order_created");
+  assert.equal(storeEntry.entityId, created.orderId);
+  assert.equal(storeEntry.actorUserId, store.userId);
+  assert.equal(storeEntry.actorRole, "store_manager");
+  assert.equal(storeEntry.depot, "Peliyagoda");
+  assert.equal(storeEntry.outletId, "OUT005");
+  assert.equal(JSON.stringify(storeEntry).includes(privateNote), false);
+  assert.deepEqual(Object.keys(storeEntry).sort(), [
+    "action", "actorRole", "actorUserId", "auditId", "createdAt", "depot", "entityId", "entityType", "operationId", "outletId",
+  ]);
+  assert.ok(entries.some(entry => entry.action === "loading_updated" && entry.actorUserId === loader.userId));
+  await assert.rejects(auditEntries(store), failure(403));
+
+  await db.collection("users").doc("test-dispatcher-other-depot").set({
+    name: "Other Depot Dispatcher", email: "other-dispatcher@emulator.waypoint.test", role: "dispatcher",
+    depot: "Ratmalana", outletId: null, enabled: true, authVersion: 0,
+  });
+  const otherDispatcher = await principal("test-dispatcher-other-depot");
+  assert.deepEqual(await auditEntries(otherDispatcher), []);
 });
