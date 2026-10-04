@@ -15,7 +15,6 @@ export const POST=webRoute(async(_req,params,p)=>{
   const orders=ordersSnap.docs.map(d=>({...d.data(),orderId:d.id})) as (Order&Record<string,any>)[];
   const vehicles=vehiclesSnap.docs.map(d=>({...d.data(),vehicleId:d.id})) as Vehicle[];
   ensure(orders.length>0,409,"no_orders","No eligible orders for this service date.");
-  ensure(orders.every(o=>Array.isArray(o.lines)&&o.lines.length>0&&o.lines.every((l:any)=>l.lineId&&l.unit&&Number.isInteger(l.quantity))),409,"incomplete_manifest","Provide explicit product lines and units before allocation.");
   const {trips,deferred}=await allocate(orders,vehicles,DISTRICTS,ALLOWANCES);
   ensure(trips.length+orders.length*2+deferred.length<450,422,"plan_too_large","Split this depot plan into a bounded allocation.");
   const ref=db.collection("plans").doc(planId);
