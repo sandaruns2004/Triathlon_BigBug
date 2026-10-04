@@ -48,7 +48,6 @@ export default function SyncCentrePage() {
   }
 
   return (
-  return (
     <div className="flex-1 overflow-y-auto px-[22px] pt-[10px] pb-[24px]">
       <div className="flex items-center gap-[8px] mt-[4px] mb-[23px]">
         <h1 className="text-[28px] leading-[1.2] tracking-[-1px] font-[650] my-[8px]">Sync Centre</h1>
