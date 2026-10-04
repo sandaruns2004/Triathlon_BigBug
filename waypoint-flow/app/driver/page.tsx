@@ -67,101 +67,116 @@ export default function DriverTodayPage() {
   const isOnRoute = ["on_route","returning"].includes(trip.status) && !trip.held;
 
   return (
-    <div className="flex flex-col h-full bg-wp-pale pb-20">
-      <p role="status" className="p-3">{message}</p>
-      {/* Hero Section */}
-      <div className="bg-wp-ink text-white p-6 pb-8 rounded-b-3xl shadow-md">
-        <div className="flex justify-between items-start mb-6">
-          <div>
-            <h1 className="text-2xl font-bold">{trip.vehicleId}</h1>
-            <p className="text-white/70 text-sm mt-1">{trip.brand} • {trip.district}</p>
+    <div className="flex flex-col h-full bg-[#f6f8f7]">
+      {message && <p role="status" className="px-[22px] py-2 text-sm text-[#ae483a]">{message}</p>}
+      
+      {/* ── Trip Hero ── */}
+      <div className="relative overflow-hidden rounded-[18px] bg-[#146b45] text-white p-[22px] mx-[22px] mt-1 mb-[15px]">
+        <div className="pointer-events-none absolute -right-[56px] top-[50px] w-[205px] h-[205px] rounded-full border border-white/10 shadow-[0_0_0_30px_rgba(255,255,255,0.015),0_0_0_60px_rgba(255,255,255,0.01)]" />
+        
+        <div className="relative z-10">
+          <div className="flex justify-between items-start">
+            <div>
+              <div className="text-[#acd0bb] text-[10px] font-bold uppercase tracking-[1.6px]">{trip.status.replace("_", " ")}</div>
+              <h2 className="text-[30px] font-[650] tracking-tight mt-3">{trip.vehicleId}</h2>
+              <div className="text-[#c0ddcb] text-[12px] mt-1.5">{trip.brand} • {trip.district}</div>
+            </div>
           </div>
-          <StatusChip status={trip.status} />
-        </div>
+          
+          <div className="flex gap-7 my-[23px]">
+            <div>
+              <strong className="block text-[23px] font-semibold">{trip.stopsCompleted}</strong>
+              <small className="block text-[10px] text-[#b9d7c6] font-bold uppercase tracking-[1.6px] mt-1">Done</small>
+            </div>
+            <div>
+              <strong className="block text-[23px] font-semibold">{trip.stopCount}</strong>
+              <small className="block text-[10px] text-[#b9d7c6] font-bold uppercase tracking-[1.6px] mt-1">Stops</small>
+            </div>
+            <div>
+              <strong className="block text-[23px] font-semibold">{trip.weightKg}</strong>
+              <small className="block text-[10px] text-[#b9d7c6] font-bold uppercase tracking-[1.6px] mt-1">Kg</small>
+            </div>
+          </div>
 
-        <div className="flex justify-between items-center bg-white/10 p-4 rounded-xl">
-          <div className="text-center">
-            <div className="text-2xl font-bold">{trip.stopsCompleted}</div>
-            <div className="text-[10px] uppercase text-white/70 font-semibold tracking-wide">Done</div>
-          </div>
-          <div className="text-white/30 text-2xl font-light">/</div>
-          <div className="text-center">
-            <div className="text-2xl font-bold">{trip.stopCount}</div>
-            <div className="text-[10px] uppercase text-white/70 font-semibold tracking-wide">Stops</div>
-          </div>
-          <div className="text-white/30 text-2xl font-light">/</div>
-          <div className="text-center">
-            <div className="text-2xl font-bold">{trip.weightKg}</div>
-            <div className="text-[10px] uppercase text-white/70 font-semibold tracking-wide">Kg</div>
-          </div>
-        </div>
+          {isReady && (
+            <button 
+              onClick={handleStartRoute}
+              className="w-full bg-white text-[#146b45] font-semibold text-[14px] h-[48px] rounded-[9px] flex items-center justify-center gap-[9px] hover:bg-[#f0f6f1] transition-colors"
+            >
+              <Play size={20} fill="currentColor" strokeWidth={1} />
+              START ROUTE
+            </button>
+          )}
 
-        {isReady && (
-          <button 
-            onClick={handleStartRoute}
-            className="w-full mt-6 bg-wp-action text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors shadow-lg active:scale-95"
-          >
-            <Play size={20} fill="currentColor" />
-            START ROUTE
-          </button>
-        )}
+          {!isReady && isOnRoute && (
+            <div className="mt-[13px] flex items-center justify-center gap-1.5 text-[10px] text-[#c9e2d2]">
+              <div className="w-[13px] h-[13px] flex items-center justify-center"><Navigation size={12} className="-rotate-45 fill-current" strokeWidth={1.5} /></div>
+              Trip in progress
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Route List */}
-      <div className="flex-1 px-4 pt-6">
-        <h2 className="text-sm font-bold text-wp-muted uppercase tracking-wider mb-4 px-2">Delivery Sequence</h2>
+      {/* ── Route List ── */}
+      <div className="px-[22px]">
+        <div className="flex items-center justify-between mt-[25px] mb-[12px]">
+          <h2 className="text-[17px] font-[650] tracking-[-0.5px]">Delivery Sequence</h2>
+        </div>
         
-        <div className="space-y-3">
-          {stops.map((stop) => {
-            const isCompleted = ["delivered","partial","failed","refused","skipped"].includes(stop.status);
-            
-            return (
-              <Link 
-                key={stop.stopId}
-                href={isOnRoute && !isCompleted ? `/driver/stop/${stop.stopId}` : "#"}
-                className={cn(
-                  "block bg-white p-4 rounded-xl border border-wp-border shadow-sm transition-transform",
-                  !isOnRoute && "opacity-60 pointer-events-none",
-                  isCompleted && "opacity-50",
-                  isOnRoute && !isCompleted && "active:scale-[0.98] border-wp-action/30"
-                )}
-              >
-                <div className="flex items-start gap-3">
-                  <div className={cn(
-                    "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 mt-0.5",
-                    isCompleted ? "bg-wp-green/20 text-wp-green" : "bg-wp-ink text-white"
-                  )}>
+        <div className="bg-white border border-[#dce5df] rounded-[14px] overflow-hidden mb-[15px]">
+          <div className="px-[17px]">
+            {stops.map((stop, index) => {
+              const isCompleted = ["delivered","partial","failed","refused","skipped"].includes(stop.status);
+              const isLast = index === stops.length - 1;
+              
+              return (
+                <div key={stop.stopId} className={`flex gap-[13px] py-[17px] ${!isLast ? 'border-b border-[#e7ede5]' : ''}`}>
+                  <div className={`w-[32px] h-[32px] rounded-[10px] flex-shrink-0 grid place-items-center text-[12px] font-[700] mt-0.5
+                    ${isCompleted ? "bg-[#edf0ed] text-[#8b988e]" : "bg-[#eaf6ef] text-[#146b45]"}
+                  `}>
                     {isCompleted ? <CheckCircle2 size={16} /> : stop.stopOrder}
                   </div>
                   
-                  <div className="flex-1">
-                    <h3 className={cn("font-bold text-base mb-1", isCompleted ? "line-through text-wp-muted" : "text-wp-ink")}>
-                      {stop.outletName}
-                    </h3>
-                    <p className="text-xs text-wp-muted flex items-center gap-1 mb-2">
-                      <MapPin size={12} /> {stop.address || "Address not provided"}
-                    </p>
-                    <div className="flex gap-2">
-                      <span className="text-[10px] font-bold bg-wp-pale text-wp-muted px-2 py-0.5 rounded">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <Link 
+                          href={isOnRoute && !isCompleted ? `/driver/stop/${stop.stopId}` : "#"}
+                          className={cn(
+                            "text-[14px] font-[650] block truncate",
+                            isCompleted ? "line-through text-[#6b7870]" : "text-[#17221d]",
+                            (!isOnRoute || isCompleted) && "pointer-events-none"
+                          )}
+                        >
+                          {stop.outletName}
+                        </Link>
+                        <p className="text-[12px] text-[#6b7870] mt-1 truncate">
+                          {stop.address || "Address not provided"}
+                        </p>
+                      </div>
+                      
+                      {isOnRoute && !isCompleted && (
+                        <Link href={`/driver/stop/${stop.stopId}`} className="w-[48px] h-[48px] shrink-0 grid place-items-center -my-2 -mr-2 rounded-full hover:bg-[#f6f8f7]">
+                          <Navigation size={18} className="text-[#146b45] stroke-[1.8]" />
+                        </Link>
+                      )}
+                    </div>
+
+                    <div className="flex gap-2 mt-2">
+                      <span className="text-[10px] font-[650] bg-[#edf1ed] text-[#6b7870] px-2 py-1 rounded-[6px] whitespace-nowrap">
                         {stop.expectedKg} kg
                       </span>
                       {stop.status === "failed" && (
-                        <span className="text-[10px] font-bold bg-red-50 text-red-600 px-2 py-0.5 rounded flex items-center gap-1">
+                        <span className="text-[10px] font-[650] bg-[#fcf2df] text-[#92611a] px-2 py-1 rounded-[6px] whitespace-nowrap flex items-center gap-1">
                           <AlertCircle size={10} /> FAILED
                         </span>
                       )}
                     </div>
                   </div>
-                  
-                  {isOnRoute && !isCompleted && (
-                    <div className="text-wp-action mt-2">
-                      <Navigation size={20} />
-                    </div>
-                  )}
                 </div>
-              </Link>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>
