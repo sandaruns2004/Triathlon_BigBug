@@ -8,14 +8,12 @@ const nextConfig = {
   // Prevent Next.js from bundling these server-only native/ESM modules.
   // Required for firebase-admin and bcryptjs to work in Vercel serverless functions.
   // NOTE: In Next.js 14, this key lives under `experimental`. It moves to top-level in Next.js 15.
+  transpilePackages: ["firebase-admin", "jwks-rsa", "jose"],
   experimental: {
     serverComponentsExternalPackages: [
-      "firebase-admin",
       "bcryptjs",
       "@google-cloud/firestore",
       "google-gax",
-      "jwks-rsa",
-      "jose",
     ],
   },
 
