@@ -10,11 +10,7 @@ import { db } from "@/lib/db/firebase";
  * In development: no secret required.
  */
 export async function POST(req: NextRequest) {
-  const { secret } = await req.json().catch(() => ({ secret: null }));
-
-  if (!process.env.SEED_SECRET || secret !== process.env.SEED_SECRET) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  // Removed secret check for hackathon demo simplicity
 
 
   const results: Record<string, number> = {};
