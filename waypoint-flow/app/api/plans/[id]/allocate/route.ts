@@ -45,7 +45,7 @@ export const POST=webRoute(async(_req,params,p)=>{
         const stopId=tripId+"-"+(index+1);
         tx.create(db.collection("trip_stops").doc(stopId),{stopId,tripId,orderId:o.orderId,outletId:o.outletId,outletName:outlet!.name,
           stopOrder:index+1,status:"needs_planning",loadingState:"pending",shortfallOpen:false,stopManifestRevision:1,stopDeliveryVersion:0,
-          expectedKg:o.orderWeightKg,lines:order.lines,address:outlet!.address??"",latitude:outlet!.latitude??null,longitude:outlet!.longitude??null,
+          expectedKg:o.orderWeightKg,lines:order.lines??[],address:outlet!.address??"",latitude:outlet!.latitude??null,longitude:outlet!.longitude??null,
           window:(outlet!.windowOpenTime??"")+"–"+(outlet!.windowCloseTime??""),instruction:outlet!.instruction??"Follow the receiving instructions."});
         tx.update(db.collection("orders").doc(o.orderId),{tripId,stopId,planId,status:"planned",fulfillmentVersion:(order.fulfillmentVersion??0)+1});
         const eventId=digest([planId,o.orderId,"order_planned"]);
