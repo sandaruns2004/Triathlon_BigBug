@@ -9,7 +9,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { ensure, assertTripOwner, assertOrderOwner, evidencePolicy } from "./domain";
 import { ApiError } from "./errors";
 
-export const localMedia = () => process.env.MOBILE_TEST_MODE === "emulator";
+export const localMedia = () => process.env.MOBILE_TEST_MODE === "emulator" || !process.env.AWS_S3_BUCKET || !process.env.AWS_ACCESS_KEY_ID;
 const root = () => path.join(process.cwd(), ".test-media");
 const s3 = () => new S3Client({ region: process.env.AWS_REGION, credentials: {
   accessKeyId: process.env.AWS_ACCESS_KEY_ID ?? "", secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY ?? "" } });
@@ -43,10 +43,10 @@ async function authorizeCapture(principal: Principal, input: { tripId?: string; 
       const { operationKey } = await import("./domain");
       const review = await db.collection("conflict_reviews").doc(operationKey(principal.userId, input.reviewOperationId)).get();
       ensure(review.exists && review.data()!.stopId === stop.id && review.data()!.userId === principal.userId, 403, "forbidden", "Create an authorized review before uploading historical evidence.");
-      return { tripId: tripDoc.id, stopId: stop.id, orderId: stop.data()!.orderId, purpose: "conflict_review" };
+      return { tripId: tripDoc.id, stopId: stop.id, orderId: stop.data()!.orderId ?? null, purpose: "conflict_review" };
     }
     assertTripOwner(principal, trip);
-    return { tripId: tripDoc.id, stopId: stop.id, orderId: stop.data()!.orderId, purpose: "proof" };
+    return { tripId: tripDoc.id, stopId: stop.id, orderId: stop.data()!.orderId ?? null, purpose: "proof" };
   }
   if (principal.role === "store_manager") {
     const order = await db.collection("orders").doc(input.orderId ?? "invalid").get();
@@ -59,7 +59,7 @@ async function authorizeCapture(principal: Principal, input: { tripId?: string; 
     const stop = await db.collection("trip_stops").doc(input.stopId ?? "invalid").get();
     ensure(trip.exists && trip.data()!.depot === principal.depot && stop.exists && stop.data()!.tripId === trip.id &&
       ["planned", "loading", "ready_to_depart"].includes(trip.data()!.status), 403, "forbidden", "Loading evidence must belong to this depot's current loading trip.");
-    return { tripId: trip.id, stopId: stop.id, orderId: stop.data()!.orderId, purpose: "shortfall" };
+    return { tripId: trip.id, stopId: stop.id, orderId: stop.data()!.orderId ?? null, purpose: "shortfall" };
   }
   throw new ApiError(403, "forbidden", "This account cannot capture evidence here.");
 }

@@ -21,11 +21,15 @@ function initFirebase() {
 export function adminAuth() { initFirebase(); return getAuth(); }
 // Route modules are compiled without operational credentials. Resolve Admin at
 // request time; never embed a service-account key in the Docker build context.
+const globalForFirestore = globalThis as unknown as { firestoreInstance: ReturnType<typeof getFirestore> | null };
 export const db = new Proxy({} as ReturnType<typeof getFirestore>, {
   get(_target, property) {
-    initFirebase();
-    const firestore = getFirestore();
-    const value = Reflect.get(firestore, property, firestore);
-    return typeof value === "function" ? value.bind(firestore) : value;
+    if (!globalForFirestore.firestoreInstance) {
+      initFirebase();
+      globalForFirestore.firestoreInstance = getFirestore();
+    }
+    const inst = globalForFirestore.firestoreInstance;
+    const value = Reflect.get(inst, property, inst);
+    return typeof value === "function" ? value.bind(inst) : value;
   },
 });

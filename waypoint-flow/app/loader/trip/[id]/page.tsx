@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ChevronLeft, PackageCheck, AlertTriangle, ArrowDownToLine, Loader2 } from "lucide-react";
+import { ChevronLeft, PackageCheck, AlertTriangle, ArrowDownToLine, Loader2, X, Camera } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CapacityBar } from "@/components/shared/CapacityBar";
 import { StatusChip } from "@/components/shared/StatusChip";
@@ -15,10 +15,13 @@ export default function LoaderTripPage() {
   const [stops, setStops] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [shortfallStop, setShortfallStop] = useState<string | null>(null);
+  
+  // Shortfall Panel State
+  const [shortfallStop, setShortfallStop] = useState<{ id: string, name: string } | null>(null);
   const [shortfallReason, setShortfallReason] = useState("");
-  const [shortfallPhotos, setShortfallPhotos] = useState<{file:File;id:string}[]>([]);
+  const [shortfallPhotos, setShortfallPhotos] = useState<{file: File; id: string; url: string}[]>([]);
   const [message, setMessage] = useState("");
+  const [messageType, setMessageType] = useState<"info"|"error"|"success">("info");
 
   const fetchTripDetails = () => {
     fetch(`/api/loader/trips/${params.id}`)
@@ -30,6 +33,7 @@ export default function LoaderTripPage() {
       })
       .catch(e => {
         setMessage((e as Error).message);
+        setMessageType("error");
         setLoading(false);
       });
   };
@@ -43,25 +47,48 @@ export default function LoaderTripPage() {
     try {
       const res = await fetch(`/api/loader/stops/${stopId}/load`, { method: "PATCH" });
       if(!res.ok) throw Error((await res.json()).error);
+      setMessage("Stop marked as loaded successfully.");
+      setMessageType("success");
       fetchTripDetails();
     } catch (e) {
       setMessage((e as Error).message);
+      setMessageType("error");
     } finally {
       setActionLoading(null);
     }
   };
 
-  const handleReportShortfall = async (stopId: string, outletName: string) => {
-    setShortfallStop(stopId);setShortfallReason("");setShortfallPhotos([]);
+  const handleReportShortfall = (stopId: string, outletName: string) => {
+    setShortfallStop({ id: stopId, name: outletName });
+    setShortfallReason("");
+    setShortfallPhotos([]);
   };
+
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []).slice(0, 3 - shortfallPhotos.length);
+    const newPhotos = files.map(file => ({
+      file,
+      id: crypto.randomUUID(),
+      url: URL.createObjectURL(file)
+    }));
+    setShortfallPhotos(prev => [...prev, ...newPhotos]);
+  };
+
+  const removePhoto = (id: string) => {
+    setShortfallPhotos(prev => prev.filter(p => p.id !== id));
+  };
+
   const submitShortfall = async () => {
-    if(!shortfallStop || !shortfallReason.trim() || actionLoading)return;
-    const stopId=shortfallStop,detail=shortfallReason.trim();
+    if(!shortfallStop || !shortfallReason.trim() || actionLoading) return;
+    const stopId = shortfallStop.id;
+    const detail = shortfallReason.trim();
     setActionLoading(`shortfall-${stopId}`);
     try {
-      const evidenceIds=[];
-      for(const photo of shortfallPhotos)evidenceIds.push(await uploadPhoto(photo.file,photo.id,{tripId:trip.tripId,stopId}));
-      const res=await fetch("/api/exceptions", {
+      const evidenceIds = [];
+      for(const photo of shortfallPhotos) {
+        evidenceIds.push(await uploadPhoto(photo.file, photo.id, { tripId: trip.tripId, stopId }));
+      }
+      const res = await fetch("/api/exceptions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -76,36 +103,52 @@ export default function LoaderTripPage() {
           depot: trip.depot,
         })
       });
-      if(!res.ok)throw Error((await res.json()).error);
+      if(!res.ok) throw Error((await res.json()).error);
+      
+      setMessage("Shortfall reported successfully.");
+      setMessageType("success");
       setShortfallStop(null);
       fetchTripDetails();
     } catch (e) {
       setMessage((e as Error).message);
+      setMessageType("error");
     } finally {
       setActionLoading(null);
     }
   };
 
-  if (loading) return <div className="p-8 text-center">Loading trip data...</div>;
-  if (!trip) return <div className="p-8 text-center text-red-600">Trip not found.</div>;
+  if (loading) return (
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <Loader2 className="w-10 h-10 text-wp-green animate-spin" />
+    </div>
+  );
+  
+  if (!trip) return (
+    <div className="p-8 text-center text-red-600 font-bold">Trip not found.</div>
+  );
 
   const allLoaded = trip.released === true && !trip.held;
   const loadedWeight = stops.filter(s => s.status === "loaded" || s.status === "delivered").reduce((sum, s) => sum + (s.expectedKg || 0), 0);
 
   return (
-    <div className="p-4 md:p-8 max-w-4xl mx-auto w-full">
-      <p role="status">{message}</p>
-      {shortfallStop && <aside role="dialog" aria-label="Report loading shortfall" className="card-panel p-5 mb-5 space-y-3 bg-amber-50">
-        <h2 className="font-bold">Report shortfall · {shortfallStop}</h2>
-        <p>This holds departure until Dispatcher approves the manifest.</p>
-        <label className="block">Damage or missing goods<textarea maxLength={1000} value={shortfallReason} onChange={e=>setShortfallReason(e.target.value)} className="border p-2 w-full"/></label>
-        <label className="block">Photos (optional, up to three JPEG/PNG, 2 MB each)<input type="file" accept="image/jpeg,image/png" multiple capture="environment" disabled={!!actionLoading} onChange={e=>setShortfallPhotos(Array.from(e.target.files??[]).slice(0,3).map(file=>({file,id:crypto.randomUUID()})))}/></label>
-        <button disabled={!!actionLoading||!shortfallReason.trim()} onClick={submitShortfall} className="btn btn-primary">Submit shortfall and hold</button>
-        <button disabled={!!actionLoading} onClick={()=>setShortfallStop(null)} className="btn">Cancel</button>
-      </aside>}
+    <div className="p-4 md:p-8 max-w-4xl mx-auto w-full relative">
+      
+      {/* ── Messages ── */}
+      {message && !shortfallStop && (
+        <div className={`mb-6 p-4 rounded-card flex items-start gap-3 text-sm ${
+          messageType === "error" ? "bg-red-50 border border-red-200 text-red-700" :
+          messageType === "success" ? "bg-green-50 border border-green-200 text-green-800" :
+          "bg-blue-50 border border-blue-200 text-blue-800"
+        }`}>
+          <AlertTriangle size={18} className="shrink-0 mt-0.5" />
+          <p className="flex-1">{message}</p>
+          <button onClick={() => setMessage("")}><X size={16}/></button>
+        </div>
+      )}
+
       <button 
         onClick={() => router.push("/loader")}
-        className="text-wp-muted hover:text-wp-ink flex items-center gap-1 mb-6 text-sm font-semibold transition-colors"
+        className="text-wp-muted hover:text-wp-ink flex items-center gap-1 mb-6 text-sm font-semibold transition-colors w-fit"
       >
         <ChevronLeft size={16} /> Back to Load Board
       </button>
@@ -184,7 +227,7 @@ export default function LoaderTripPage() {
                   <button 
                     onClick={() => handleReportShortfall(stop.stopId, stop.outletName)}
                     disabled={actionLoading !== null}
-                    className="px-4 py-3 bg-red-50 text-red-600 rounded-md font-semibold hover:bg-red-100 transition-colors flex items-center gap-2"
+                    className="px-4 py-3 bg-red-50 border border-red-100 text-red-600 rounded-md font-semibold hover:bg-red-100 transition-colors flex items-center gap-2"
                   >
                     <AlertTriangle size={18} />
                     <span className="hidden sm:inline">Report Shortfall</span>
@@ -208,6 +251,117 @@ export default function LoaderTripPage() {
             Return to Load Board
           </button>
         </div>
+      )}
+
+      {/* ── Shortfall Slide-over Panel ── */}
+      {shortfallStop && (
+        <>
+          <div 
+            className="fixed inset-0 bg-wp-ink/30 z-40 transition-opacity" 
+            onClick={() => setShortfallStop(null)} 
+          />
+          <div className="fixed inset-y-0 right-0 w-full max-w-md bg-wp-canvas shadow-2xl z-50 flex flex-col border-l border-wp-border animate-in slide-in-from-right">
+            
+            <div className="flex items-center justify-between p-6 border-b border-wp-border bg-white">
+              <h2 className="text-xl font-bold text-wp-ink flex items-center gap-2">
+                <AlertTriangle className="text-amber-500" /> Report Shortfall
+              </h2>
+              <button 
+                onClick={() => setShortfallStop(null)}
+                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 text-wp-muted hover:text-wp-ink transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              
+              {message && (
+                <div className="p-3 rounded bg-red-50 border border-red-200 text-red-700 text-sm flex items-start gap-2">
+                  <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+                  <p>{message}</p>
+                </div>
+              )}
+
+              <div className="bg-amber-50 border border-amber-200 rounded-card p-4">
+                <p className="text-xs font-bold text-amber-800 uppercase tracking-wide mb-1">Impact Alert</p>
+                <p className="text-sm text-amber-900">
+                  This holds departure until Dispatcher approves the manifest. The outlet <strong>{shortfallStop.name}</strong> will receive a partial delivery.
+                </p>
+                <p className="text-xs text-amber-700 mt-2 font-medium">STOP ID: {shortfallStop.id}</p>
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-wp-ink">Damage or missing goods detail</label>
+                <textarea 
+                  maxLength={1000} 
+                  value={shortfallReason} 
+                  onChange={e => setShortfallReason(e.target.value)} 
+                  placeholder="E.g. Missing 2 cases of milk, or damage observed at dock..."
+                  className="w-full border border-wp-border rounded-md p-3 text-sm min-h-[100px] focus:ring-2 focus:ring-amber-500 outline-none resize-none"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-wp-ink">Evidence Photos (Optional)</label>
+                <p className="text-xs text-wp-muted mb-2">Up to 3 images, max 2MB each.</p>
+                
+                <div className="grid grid-cols-3 gap-3">
+                  {shortfallPhotos.map(photo => (
+                    <div key={photo.id} className="relative aspect-square rounded-md border border-wp-border overflow-hidden group bg-slate-100">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={photo.url} alt="Evidence" className="object-cover w-full h-full" />
+                      <button 
+                        onClick={() => removePhoto(photo.id)}
+                        className="absolute inset-0 bg-wp-ink/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
+                      >
+                        <X size={24} className="text-white" />
+                      </button>
+                    </div>
+                  ))}
+                  
+                  {shortfallPhotos.length < 3 && (
+                    <label className="aspect-square rounded-md border-2 border-dashed border-wp-border flex flex-col items-center justify-center text-wp-muted hover:text-wp-ink hover:bg-slate-50 hover:border-wp-muted transition-colors cursor-pointer">
+                      <Camera size={24} className="mb-1" />
+                      <span className="text-xs font-medium">Add Photo</span>
+                      <input 
+                        type="file" 
+                        accept="image/jpeg,image/png" 
+                        multiple 
+                        capture="environment" 
+                        disabled={!!actionLoading} 
+                        onChange={handlePhotoSelect}
+                        className="hidden" 
+                      />
+                    </label>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-wp-border bg-slate-50 flex gap-3">
+              <button 
+                disabled={!!actionLoading} 
+                onClick={() => setShortfallStop(null)} 
+                className="flex-1 btn bg-white border border-wp-border text-wp-ink hover:bg-slate-100"
+              >
+                Cancel
+              </button>
+              <button 
+                disabled={!!actionLoading || !shortfallReason.trim()} 
+                onClick={submitShortfall} 
+                className="flex-[2] btn bg-amber-600 hover:bg-amber-700 text-white border-none flex items-center justify-center gap-2"
+              >
+                {actionLoading?.startsWith("shortfall") ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <AlertTriangle size={16} />
+                )}
+                Submit Shortfall
+              </button>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

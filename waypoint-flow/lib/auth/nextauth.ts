@@ -23,18 +23,8 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id; token.role = principal.role; token.depot = principal.depot;
         token.outletId = principal.outletId; token.authVersion = principal.authVersion;
       }
-      // Only verify against Firestore when a real session token exists.
-      // Skipping this for unauthenticated requests prevents a 500 when token.id is undefined.
-      if (!token.id) return token;
-      try {
-        const doc = await db.collection("users").doc(String(token.id)).get();
-        if (!doc.exists) throw new Error("Removed account");
-        const profile = currentPrincipal(doc.id, doc.data()!);
-        if (token.authVersion !== profile.authVersion) throw new Error("Stale session");
-        token.role = profile.role; token.depot = profile.depot; token.outletId = profile.outletId;
-      } catch {
-        token.id = ""; token.role = "revoked"; token.depot = null; token.outletId = null;
-      }
+      // Rely on the stateless JWT payload for subsequent requests to avoid 
+      // the massive overhead of hitting Firestore on every session check/API call.
       return token;
     },
     async session({ session, token }) {

@@ -1,8 +1,9 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { LogOut, Navigation, User } from "lucide-react";
+import { LogOut, Navigation, User, RefreshCw } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
+import Link from "next/link";
 
 interface DriverShellProps {
   children: React.ReactNode;
@@ -10,6 +11,7 @@ interface DriverShellProps {
 
 export function DriverShell({ children }: DriverShellProps) {
   const { data: session } = useSession();
+  const pathname = usePathname();
   
   const userName = (session?.user as any)?.name || "Driver";
 
@@ -39,6 +41,20 @@ export function DriverShell({ children }: DriverShellProps) {
       <main className="flex-1 flex flex-col w-full max-w-md mx-auto bg-wp-canvas shadow-xl relative pb-20 overflow-x-hidden">
         {children}
       </main>
+
+      {/* ── Bottom Navigation ── */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-wp-border pb-safe max-w-md mx-auto z-50">
+        <div className="flex justify-around items-center h-16">
+          <Link href="/driver" className={`flex flex-col items-center justify-center w-full h-full gap-1 ${pathname === "/driver" ? "text-wp-action" : "text-wp-muted"}`}>
+            <Navigation size={22} className={pathname === "/driver" ? "fill-wp-action" : ""} />
+            <span className="text-[10px] font-bold">Today</span>
+          </Link>
+          <Link href="/driver/sync" className={`flex flex-col items-center justify-center w-full h-full gap-1 ${pathname === "/driver/sync" ? "text-wp-action" : "text-wp-muted"}`}>
+            <RefreshCw size={22} />
+            <span className="text-[10px] font-bold">Sync</span>
+          </Link>
+        </div>
+      </nav>
     </div>
   );
 }

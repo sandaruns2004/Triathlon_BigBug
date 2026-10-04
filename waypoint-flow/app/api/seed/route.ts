@@ -360,5 +360,46 @@ export async function POST(req: NextRequest) {
   await orderBatch.commit();
   results.orders = demoOrders.length;
 
+  // ── 9. PRODUCTS (catalogue for store managers) ──────────────────────
+  const demoProducts = [
+    // Fresh brand products
+    { brand: "Fresh", name: "Full Cream Milk 1L",       unit: "case/12",  weightKg: 12,  volumeM3: 0.014, temperature: "ambient", maxQuantity: 500, available: true },
+    { brand: "Fresh", name: "Low-Fat Milk 1L",          unit: "case/12",  weightKg: 12,  volumeM3: 0.014, temperature: "ambient", maxQuantity: 500, available: true },
+    { brand: "Fresh", name: "Natural Yoghurt 500g",     unit: "case/6",   weightKg: 3.5, volumeM3: 0.006, temperature: "ambient", maxQuantity: 200, available: true },
+    { brand: "Fresh", name: "Strawberry Yoghurt 200g",  unit: "case/12",  weightKg: 2.6, volumeM3: 0.006, temperature: "ambient", maxQuantity: 200, available: true },
+    { brand: "Fresh", name: "Cheddar Cheese 250g",      unit: "case/6",   weightKg: 1.8, volumeM3: 0.004, temperature: "reefer",  maxQuantity: 100, available: true },
+    { brand: "Fresh", name: "Butter 500g",              unit: "case/10",  weightKg: 5.2, volumeM3: 0.008, temperature: "reefer",  maxQuantity: 150, available: true },
+    { brand: "Fresh", name: "Orange Juice 1L",          unit: "case/12",  weightKg: 13,  volumeM3: 0.016, temperature: "ambient", maxQuantity: 300, available: true },
+    { brand: "Fresh", name: "Apple Juice 200ml",        unit: "case/24",  weightKg: 5.5, volumeM3: 0.008, temperature: "ambient", maxQuantity: 400, available: true },
+    { brand: "Fresh", name: "Sparkling Water 500ml",    unit: "case/24",  weightKg: 12,  volumeM3: 0.018, temperature: "ambient", maxQuantity: 500, available: true },
+    { brand: "Fresh", name: "Still Water 1.5L",         unit: "case/12",  weightKg: 18,  volumeM3: 0.024, temperature: "ambient", maxQuantity: 500, available: true },
+    // Style brand products
+    { brand: "Style", name: "Shampoo Pro 400ml",        unit: "case/12",  weightKg: 5.5, volumeM3: 0.008, temperature: "ambient", maxQuantity: 200, available: true },
+    { brand: "Style", name: "Conditioner Silk 400ml",   unit: "case/12",  weightKg: 5.5, volumeM3: 0.008, temperature: "ambient", maxQuantity: 200, available: true },
+    { brand: "Style", name: "Face Wash Gentle 150ml",   unit: "case/24",  weightKg: 3.8, volumeM3: 0.006, temperature: "ambient", maxQuantity: 300, available: true },
+    { brand: "Style", name: "Moisturiser SPF50 75ml",   unit: "case/24",  weightKg: 2.2, volumeM3: 0.004, temperature: "ambient", maxQuantity: 250, available: true },
+    { brand: "Style", name: "Body Lotion 300ml",        unit: "case/12",  weightKg: 4.0, volumeM3: 0.006, temperature: "ambient", maxQuantity: 200, available: true },
+    { brand: "Style", name: "Deodorant Roll-On 75ml",   unit: "case/24",  weightKg: 2.0, volumeM3: 0.004, temperature: "ambient", maxQuantity: 300, available: true },
+    { brand: "Style", name: "Lip Balm 4g",              unit: "case/48",  weightKg: 0.4, volumeM3: 0.002, temperature: "ambient", maxQuantity: 500, available: true },
+    { brand: "Style", name: "Sunscreen SPF30 100ml",    unit: "case/24",  weightKg: 2.8, volumeM3: 0.004, temperature: "ambient", maxQuantity: 200, available: true },
+    // Tech brand products
+    { brand: "Tech",  name: "USB-C Cable 1m",           unit: "case/20",  weightKg: 2.0, volumeM3: 0.006, temperature: "ambient", maxQuantity: 200, available: true },
+    { brand: "Tech",  name: "Phone Case Universal",     unit: "case/10",  weightKg: 1.5, volumeM3: 0.008, temperature: "ambient", maxQuantity: 150, available: true },
+    { brand: "Tech",  name: "Screen Protector 6.5\"",   unit: "case/20",  weightKg: 0.8, volumeM3: 0.004, temperature: "ambient", maxQuantity: 200, available: true },
+    { brand: "Tech",  name: "Earbuds Wireless",         unit: "case/6",   weightKg: 1.2, volumeM3: 0.006, temperature: "ambient", maxQuantity: 100, available: true },
+    { brand: "Tech",  name: "Power Bank 10000mAh",      unit: "each",     weightKg: 0.9, volumeM3: 0.003, temperature: "ambient", maxQuantity: 100, available: true },
+    { brand: "Tech",  name: "Micro USB Cable 1m",       unit: "case/20",  weightKg: 1.8, volumeM3: 0.005, temperature: "ambient", maxQuantity: 200, available: true },
+    { brand: "Tech",  name: "Bluetooth Speaker Mini",   unit: "case/4",   weightKg: 2.4, volumeM3: 0.008, temperature: "ambient", maxQuantity: 80,  available: true },
+  ];
+
+  const pBatch = db.batch();
+  for (let i = 0; i < demoProducts.length; i++) {
+    const p = demoProducts[i];
+    const productId = `PROD-${p.brand.toUpperCase().slice(0,2)}-${String(i + 1).padStart(3, "0")}`;
+    pBatch.set(db.collection("products").doc(productId), { ...p, productId }, { merge: true });
+  }
+  await pBatch.commit();
+  results.products = demoProducts.length;
+
   return NextResponse.json({ success: true, seeded: results });
 }

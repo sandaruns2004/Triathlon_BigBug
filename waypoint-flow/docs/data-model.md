@@ -1,27 +1,58 @@
-# Data Model
+# Waypoint Flow — Data Model
 
-Our application uses Firebase Firestore (NoSQL) as the primary data store. The data is organized into the following root collections:
+## Database: Firebase Firestore (NoSQL)
 
-### 1. `users`
-Contains the core identities for all four roles (Dispatcher, Loader, Driver, Store Manager). Used by NextAuth for authentication and role-based access control.
+All data is stored in Firebase Firestore as document collections. There is no relational schema — documents use embedded sub-objects and ID references.
 
-### 2. `vehicles`
-Represents the fleet capacity, status, and current location. The allocation engine reads from here to determine available capacity.
+## Collections
 
-### 3. `outlets`
-Stores the geographical and operational metadata for each store (e.g., dock types, time windows, parking constraints).
+### Reference Data (seeded from challenge CSVs)
 
-### 4. `orders`
-The central source of truth for demand. Orders are created by the Store Manager and picked up by the Dispatcher's Plan Builder. Fields include volume, weight, temperature requirements, and deferral status.
+| Collection | Key Fields | Description |
+|---|---|---|
+| `vehicles` | `vehicleId`, `type`, `temp`, `weightCapKg`, `volumeCapM3`, `depot` | 60 Waypoint delivery vehicles |
+| `outlets` | `outletId`, `name`, `brand`, `district`, `depot`, `dockType`, `parkingConstraint` | 120 retail outlets |
+| `districts` | `district`, `depot`, `depotToDistrictFreeflowMin`, `interStopFreeflowMin` | Route distance/time data |
+| `serviceAllowances` | `brand`, `dockType`, `serviceAllowanceMin` | Time per stop per brand/dock type |
+| `calendar` | `date`, `isWeekend`, `isHoliday`, `monsoon`, `isOperating` | Operating calendar |
+| `trafficSpeeds` | `district`, `hour`, `monsoon`, `speedIndex` | Hourly traffic speed data |
 
-### 5. `trips`
-Created when a Dispatcher publishes a plan. A trip represents a sequence of stops for a specific vehicle on a specific date.
+### Operational Data
 
-### 6. `trip_stops`
-The individual drop-offs within a trip. These are tracked individually by the Driver and Store Manager to confirm receipt and flag discrepancies.
+| Collection | Key Fields | Description |
+|---|---|---|
+| `users` | `id`, `name`, `email`, `role`, `depot`, `outletId`, `passwordHash` | 4 seeded accounts (one per role) |
+| `trips` | `tripId`, `vehicleId`, `brand`, `district`, `status`, `planDate` | Delivery trips (1-2 per vehicle per day) |
+| `trip_stops` | `stopId`, `tripId`, `outletId`, `stopOrder`, `status`, `expectedKg` | Individual stops per trip |
+| `orders` | `orderId`, `outletId`, `status`, `deferralReason`, `deferredYesterday` | Store orders (status tracks through workflow) |
+| `exceptions` | `exceptionId`, `type`, `severity`, `resolved`, `tripId` | Dispatcher exception queue |
+| `daily_metrics` | `date`, `depot`, `ordersToPlan`, `tripsPlanned`, `activeExceptions` | Dashboard health strip data |
+| `deliveries` | `deliveryId`, `orderId`, `driverId`, `outcome`, `photoUrl`, `syncedAt` | Proof of delivery records |
+| `discrepancies` | `discrepancyId`, `deliveryId`, `type`, `quantity`, `reportedBy` | Store-reported receipt issues |
 
-### 7. `exceptions`
-A real-time log of issues reported during loading or transit (e.g., breakdowns, loading shortfalls). These surface immediately on the Dispatcher's dashboard.
+## Key Relationships
 
-### 8. `daily_metrics`
-Aggregated statistics (e.g., total orders, active vehicles, on-time percentage) used to populate the morning health strip on the Dispatcher dashboard efficiently.
+```
+trips ──────(vehicleId)──────▶ vehicles
+trip_stops ─(tripId)──────────▶ trips
+trip_stops ─(outletId)────────▶ outlets
+orders ─────(outletId)────────▶ outlets
+orders ─────(tripId)──────────▶ trips (when assigned)
+deliveries ─(orderId)─────────▶ orders
+discrepancies ─(deliveryId)───▶ deliveries
+exceptions ─(tripId)──────────▶ trips
+```
+
+## Order Status Flow
+
+```
+submitted → pending → assigned → loading → on_route → delivered → receipt_confirmed
+                                              ↓
+                                          deferred (with mandatory deferralReason)
+```
+
+## Critical Rules
+
+- `deferralReason` is NEVER null when `status = 'deferred'` — enforced in API route
+- `syncedAt` is `null` when a delivery outcome is saved locally on the driver's device only
+- `deferredYesterday = true` orders get priority in the allocation engine
