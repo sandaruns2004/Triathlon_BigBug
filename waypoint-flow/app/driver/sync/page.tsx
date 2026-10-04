@@ -48,19 +48,22 @@ export default function SyncCentrePage() {
   }
 
   return (
-    <div className="p-6 max-w-lg mx-auto space-y-6">
-      <h1 className="text-2xl font-bold text-wp-ink">Sync Centre</h1>
+  return (
+    <div className="flex-1 overflow-y-auto px-[22px] pt-[10px] pb-[24px]">
+      <div className="flex items-center gap-[8px] mt-[4px] mb-[23px]">
+        <h1 className="text-[28px] leading-[1.2] tracking-[-1px] font-[650] my-[8px]">Sync Centre</h1>
+      </div>
 
       {/* Connection State Card */}
-      <div className={`card-panel p-5 flex items-center gap-4 ${online ? "border-green-200 bg-green-50" : "border-amber-200 bg-amber-50"}`}>
+      <div className={`flex items-start gap-[12px] p-[17px] rounded-[12px] border mb-[15px] ${online ? "bg-[#eff5ed] border-[#dce8d7]" : "bg-[#fff3dc] border-[#eddfc4]"}`}>
         {online
-          ? <CheckCircle2 size={28} className="text-wp-success shrink-0" />
-          : <CloudOff  size={28} className="text-amber-600 shrink-0" />}
+          ? <CheckCircle2 size={20} className="text-[#146b45] shrink-0 mt-0.5" />
+          : <CloudOff  size={20} className="text-[#845e25] shrink-0 mt-0.5" />}
         <div>
-          <p className="font-semibold text-wp-ink">
+          <h3 className="text-[12px] font-[650] mb-[5px] text-[#17221d]">
             {online ? "Connected" : "You're offline"}
-          </p>
-          <p className="text-sm text-wp-muted">
+          </h3>
+          <p className={`text-[11px] ${online ? "text-[#6b7870]" : "text-[#845e25]"}`}>
             {online
               ? "Your records can be synced now."
               : "Your route and delivery records are available on this phone."}
@@ -69,7 +72,7 @@ export default function SyncCentrePage() {
       </div>
 
       {/* Storage Assurance */}
-      <div className="card-panel p-4 text-sm text-wp-muted">
+      <div className="bg-white border border-[#dce5df] rounded-[14px] p-[18px] text-[13px] leading-[1.55] mb-[15px]">
         Records are saved on this phone and will sync when you reconnect.
       </div>
 
@@ -77,49 +80,54 @@ export default function SyncCentrePage() {
       <button
         onClick={handleSync}
         disabled={!online || syncing || queued.length === 0}
-        className="btn btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-40"
+        className="w-full min-h-[48px] px-[16px] border rounded-[12px] flex items-center justify-center gap-[9px] font-[600] text-[14px] mb-[25px] disabled:opacity-45 disabled:cursor-not-allowed bg-[#146b45] border-[#146b45] text-white hover:bg-[#105b3a]"
       >
-        <RefreshCw size={18} className={syncing ? "animate-spin" : ""} />
+        <RefreshCw size={21} className={syncing ? "animate-spin" : ""} strokeWidth={1.8} />
         {syncing ? "Syncing…" : "Sync now"}
       </button>
 
       {syncResult && (
-        <div className="bg-green-50 border border-green-200 rounded-card px-4 py-3 text-sm text-wp-success font-medium">
-          ✓ {syncResult}
+        <div className="p-[14px] rounded-[10px] bg-[#eaf6ef] border border-[#d6e9dd] text-[#146b45] text-[13px] leading-[1.6] my-[14px]">
+          {syncResult}
         </div>
       )}
 
       {/* Queued Actions List */}
-      <div>
-        <h2 className="text-base font-semibold text-wp-ink mb-3">
+      <div className="mt-[25px]">
+        <h2 className="text-[16px] font-[650] mb-[12px]">
           {queued.length === 0 ? "No queued records" : `${queued.length} queued record${queued.length !== 1 ? "s" : ""}`}
         </h2>
 
         {queued.length === 0 ? (
-          <div className="card-panel p-8 text-center text-wp-muted border-dashed border-2">
-            <CheckCircle2 size={36} className="mx-auto mb-3 text-wp-border" />
-            <p>All records synced. Nothing pending.</p>
+          <div className="bg-white border border-[#dce5df] border-dashed rounded-[14px] p-[35px] text-center text-[#6b7870] flex flex-col items-center justify-center gap-[15px]">
+            <CheckCircle2 size={32} className="text-[#dce5df]" />
+            <p className="text-[13px]">All records synced. Nothing pending.</p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {queued.map((item: any, i: number) => (
-              <div key={i} className="card-panel p-4 flex items-start gap-3">
-                <Package size={20} className="text-wp-muted shrink-0 mt-0.5" />
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-wp-ink truncate">{item.outletName || "Delivery stop"}</p>
-                  <p className="text-sm text-wp-muted">{item.type || "Proof of delivery"}</p>
-                  <div className="flex items-center gap-1 mt-1">
-                    <Clock size={12} className="text-wp-muted" />
-                    <span className="text-xs text-wp-muted">
-                      {item.localTime ? new Date(item.localTime).toLocaleTimeString() : "—"}
-                    </span>
-                    <span className="ml-2 text-xs font-medium text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">
-                      Saved on this phone
-                    </span>
+          <div className="bg-white border border-[#dce5df] rounded-[14px] overflow-hidden mb-[15px]">
+            <div className="px-[17px]">
+              {queued.map((item: any, i: number) => {
+                const isLast = i === queued.length - 1;
+                return (
+                  <div key={i} className={`flex gap-[13px] py-[17px] ${!isLast ? 'border-b border-[#e7ede5]' : ''}`}>
+                    <div className="w-[32px] h-[32px] rounded-[10px] bg-[#eaf6ef] text-[#146b45] flex-shrink-0 grid place-items-center mt-0.5">
+                      <Package size={16} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-[14px] font-[650] truncate">{item.outletName || "Delivery stop"}</h3>
+                      <p className="text-[12px] text-[#6b7870] mt-[4px]">{item.type || "Proof of delivery"}</p>
+                      <div className="flex items-center gap-[8px] font-[11px] text-[#6b7870] mt-[11px]">
+                        <Clock size={14} className="text-[#718873]" />
+                        <span>{item.localTime ? new Date(item.localTime).toLocaleTimeString() : "—"}</span>
+                        <span className="inline-flex items-center gap-[5px] rounded-[6px] px-[8px] py-[5px] text-[10px] font-[650] bg-[#fcf2df] text-[#92611a] whitespace-nowrap ml-2">
+                          Saved on this phone
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            ))}
+                );
+              })}
+            </div>
           </div>
         )}
       </div>
