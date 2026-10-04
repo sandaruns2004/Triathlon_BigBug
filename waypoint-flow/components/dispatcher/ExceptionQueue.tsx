@@ -1,3 +1,5 @@
+"use client";
+import { useState } from "react";
 import { TriangleAlert, MapPin, PackageX, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -45,7 +47,20 @@ const SEVERITY_ICON: Record<string, string> = {
 };
 
 export function ExceptionQueue({ exceptions, loading }: ExceptionQueueProps) {
-  const count = exceptions.filter((e) => e.severity === "critical" || e.severity === "high").length;
+  const [localResolved, setLocalResolved] = useState<Set<string>>(new Set());
+
+  const activeExceptions = exceptions.filter(e => !localResolved.has(e.exceptionId));
+  const count = activeExceptions.filter((e) => e.severity === "critical" || e.severity === "high").length;
+
+  const handleResolve = (exceptionId: string) => {
+    // For the hackathon demo, instantly remove it from the UI
+    setLocalResolved(prev => {
+      const next = new Set(prev);
+      next.add(exceptionId);
+      return next;
+    });
+    alert(`Exception ${exceptionId} marked as resolved!`);
+  };
 
   return (
     <div className="card-panel h-full flex flex-col">
@@ -68,13 +83,13 @@ export function ExceptionQueue({ exceptions, loading }: ExceptionQueueProps) {
               <div className="h-3 bg-wp-border rounded w-full" />
             </div>
           ))
-        ) : exceptions.length === 0 ? (
+        ) : activeExceptions.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-32 text-wp-muted text-sm gap-2">
             <AlertCircle size={28} className="text-wp-border" />
             No active exceptions
           </div>
         ) : (
-          exceptions.map((ex) => (
+          activeExceptions.map((ex) => (
             <div
               key={ex.exceptionId}
               className="border border-wp-border rounded-card p-4 hover:border-wp-action transition-colors cursor-pointer relative overflow-hidden"
@@ -90,7 +105,10 @@ export function ExceptionQueue({ exceptions, loading }: ExceptionQueueProps) {
                     <span className="text-xs text-wp-muted whitespace-nowrap ml-2">{timeAgo(ex.createdAt)}</span>
                   </div>
                   <p className="text-sm text-wp-muted mt-1 leading-snug">{ex.detail}</p>
-                  <button className="mt-3 text-xs font-semibold text-wp-action hover:text-wp-green">
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); handleResolve(ex.exceptionId); }}
+                    className="mt-3 text-xs font-semibold text-wp-action hover:text-wp-green"
+                  >
                     Review &amp; Resolve →
                   </button>
                 </div>
