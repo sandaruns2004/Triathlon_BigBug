@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { envelope } from "@/lib/mobile/browser";
 import Link from "next/link";
-import { Play, Navigation, AlertCircle, RefreshCw, CheckCircle2, Shield, ChevronRight, Clock, MapPin } from "lucide-react";
+import { Play, Navigation, AlertCircle, RefreshCw, CheckCircle2, Shield, ChevronRight, Clock, MapPin, Truck } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 
