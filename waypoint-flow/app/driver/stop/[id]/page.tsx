@@ -8,9 +8,13 @@ export default function DriverStopPage(){
     [qty,setQty]=useState<Record<string,number>>({}),[reason,setReason]=useState(""),[recipient,setRecipient]=useState(""),
     [photos,setPhotos]=useState<{file:File;id:string}[]>([]),[parked,setParked]=useState(false),[busy,setBusy]=useState(false),[message,setMessage]=useState("");
   const request=useRef<any>();
-  useEffect(()=>{api("driver/stops/"+id).then(async s=>{
-    setStop(s);setQty(Object.fromEntries(s.lines.map((l:any)=>[l.lineId,l.quantity])));
-    setTrip(await api("driver/trips/"+s.tripId));
+  useEffect(()=>{api("driver/trip").then(async data=>{
+    const { trip, stops } = data;
+    const s = stops.find((x:any) => x.stopId === id);
+    if (!s) throw new Error("Stop not found");
+    setStop(s);
+    setTrip(trip);
+    setQty(Object.fromEntries(s.lines.map((l:any)=>[l.lineId,l.quantity])));
   }).catch(e=>setMessage(e.message));},[id]);
   async function complete(){
     if(busy||!parked||!stop||!trip)return;setBusy(true);

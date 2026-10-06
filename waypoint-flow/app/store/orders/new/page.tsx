@@ -2,321 +2,179 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, envelope, submit, BrowserApiError } from "@/lib/mobile/browser";
-import { Search, ShoppingCart, Package, Snowflake, ChevronRight, AlertCircle, CheckCircle2 } from "lucide-react";
-
-interface Product {
-  productId: string;
-  name: string;
-  unit: string;
-  weightKg: number;
-  volumeM3: number;
-  temperature: string;
-  maxQuantity: number;
-  available: boolean;
-}
-
-interface Catalogue {
-  revision: number;
-  products: Product[];
-  outlet: { outletId: string; name: string; brand: string };
-  serviceOptions: { cutoff: string; version: number; serviceDates: string[] };
-}
+import Link from "next/link";
+import { ArrowLeft, ArrowRight, Minus, Plus, Search, Snowflake } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default function NewOrderPage() {
-  const router = useRouter();
-  const request = useRef<any>();
-
-  const [catalogue, setCatalogue] = useState<Catalogue>();
+  const router = useRouter(), request = useRef<any>();
+  const [catalogue, setCatalogue] = useState<any>();
   const [cart, setCart] = useState<Record<string, number>>({});
   const [date, setDate] = useState("");
   const [search, setSearch] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
-  const [messageType, setMessageType] = useState<"error" | "info">("info");
   const [canCorrect, setCanCorrect] = useState(false);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    api("store/catalogue")
-      .then((d: Catalogue) => {
-        setCatalogue(d);
-        setDate(d.serviceOptions.serviceDates[0] ?? "");
-        setLoading(false);
-      })
-      .catch((e: Error) => {
-        setMessage(e.message);
-        setMessageType("error");
-        setLoading(false);
-      });
+  
+  useEffect(() => { 
+    api("store/catalogue").then(d => { 
+      setCatalogue(d); 
+      setDate(d.serviceOptions.serviceDates[0] ?? ""); 
+    }).catch(e => setMessage(e.message)); 
   }, []);
 
-  const filteredProducts = catalogue?.products.filter((p) =>
-    p.name.toLowerCase().includes(search.toLowerCase())
-  ) ?? [];
-
-  const totalUnits = Object.values(cart).reduce((n, q) => n + q, 0);
-  const cartProducts = catalogue?.products.filter((p) => (cart[p.productId] ?? 0) > 0) ?? [];
-  const totalWeight = cartProducts.reduce((n, p) => n + p.weightKg * (cart[p.productId] ?? 0), 0);
-  const totalVolume = cartProducts.reduce((n, p) => n + p.volumeM3 * (cart[p.productId] ?? 0), 0);
-  const hasChilled = cartProducts.some((p) => ["reefer", "chilled", "frozen"].includes(p.temperature));
-
   async function save() {
-    if (busy || !catalogue || !date) return;
-    if (totalUnits === 0) {
-      setMessage("Add at least one product before submitting.");
-      setMessageType("error");
-      return;
-    }
-    setBusy(true);
-    setMessage("");
+    if (busy) return; 
+    setBusy(true); 
     try {
-      request.current ??= envelope(
-        "store_order_created",
-        {
-          requestedDate: date,
-          catalogueRevision: catalogue.revision,
-          serviceOptionsVersion: catalogue.serviceOptions.version,
-          note: "",
-          lines: catalogue.products
-            .filter((p) => (cart[p.productId] ?? 0) > 0)
-            .map((p) => ({ productId: p.productId, quantity: cart[p.productId], unit: p.unit })),
-        }
-      );
-      const receipt = await submit(request.current);
+      request.current ??= envelope("store_order_created", {
+        requestedDate: date, 
+        catalogueRevision: catalogue.revision, 
+        serviceOptionsVersion: catalogue.serviceOptions.version,
+        note: "", 
+        lines: catalogue.products.filter((p: any) => cart[p.productId] > 0).map((p: any) => ({ productId: p.productId, quantity: cart[p.productId], unit: p.unit }))
+      });
+      const receipt = await submit(request.current); 
       router.push("/store/orders/" + receipt.orderId);
-    } catch (e) {
-      setCanCorrect(e instanceof BrowserApiError && (e as BrowserApiError).httpStatus === 422);
-      setMessage((e as Error).message);
-      setMessageType("error");
-    } finally {
-      setBusy(false);
+    } catch (e) { 
+      setCanCorrect(e instanceof BrowserApiError && e.httpStatus === 422); 
+      setMessage((e as Error).message); 
+    } finally { 
+      setBusy(false); 
     }
   }
 
-  if (loading) {
-    return (
-      <div className="flex-1 flex items-center justify-center min-h-[60vh]">
-        <div className="text-center">
-          <div className="w-10 h-10 border-4 border-wp-green border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-wp-muted text-sm">Loading catalogue…</p>
-        </div>
-      </div>
-    );
-  }
+  const updateCart = (productId: string, delta: number, max: number = 1000) => {
+    setCart(prev => {
+      const current = prev[productId] || 0;
+      const next = Math.max(0, Math.min(max, current + delta));
+      return { ...prev, [productId]: next };
+    });
+  };
+
+  const totalItems = Object.values(cart).reduce((n, q) => n + q, 0);
 
   return (
-    <div className="flex-1 flex flex-col min-h-0">
-      {/* ── Page header ── */}
-      <div className="px-8 pt-8 pb-4 border-b border-wp-border bg-wp-canvas">
-        <div className="flex items-start justify-between max-w-screen-xl mx-auto">
-          <div>
-            <h1 className="text-2xl font-bold text-wp-ink">Create order</h1>
-            <p className="text-sm text-wp-muted mt-1">
-              {catalogue?.outlet.name} · {catalogue?.outlet.brand} Brand
-            </p>
-          </div>
-          <div className="text-right">
-            <p className="text-xs text-wp-muted">Order cut-off</p>
-            <p className="text-sm font-semibold text-wp-ink">{catalogue?.serviceOptions.cutoff} Asia/Colombo</p>
-          </div>
-        </div>
-
-        {/* Date selector */}
-        <div className="max-w-screen-xl mx-auto mt-4 flex items-center gap-4">
-          <label className="flex items-center gap-2 text-sm font-medium text-wp-ink">
-            Requested date
-            <select
-              disabled={busy || !!request.current}
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="ml-2 border border-wp-border rounded-md px-3 py-2 text-sm bg-white text-wp-ink focus:outline-none focus:ring-2 focus:ring-wp-green"
-            >
-              {catalogue?.serviceOptions.serviceDates.map((d) => (
-                <option key={d} value={d}>{d}</option>
-              ))}
-            </select>
-          </label>
-        </div>
+    <div className="flex flex-col h-full bg-[#f6f8f7] px-[22px] pt-[10px]">
+      {message && <p role="status" className="py-2 text-[13px] text-[#ae483a]">{message}</p>}
+      
+      <div className="flex items-center gap-[8px] mb-[18px]">
+        <Link href="/store" className="bg-transparent border-none p-2 -ml-[12px] text-[#17221d]">
+          <ArrowLeft size={24} strokeWidth={2.5} />
+        </Link>
+        <h1 className="text-[22px] font-[650] tracking-tight m-0">Create an order</h1>
       </div>
 
-      {/* ── Error / info banner ── */}
-      {message && (
-        <div className={`mx-8 mt-4 max-w-screen-xl mx-auto px-4 py-3 rounded-card flex items-start gap-3 text-sm ${
-          messageType === "error"
-            ? "bg-red-50 border border-red-200 text-red-700"
-            : "bg-wp-pale border border-green-200 text-wp-success"
-        }`}>
-          <AlertCircle size={16} className="shrink-0 mt-0.5" />
-          <div className="flex-1">
-            {message}
-            {canCorrect && (
-              <button
-                disabled={busy}
-                onClick={() => {
-                  request.current = undefined;
-                  setCanCorrect(false);
-                  setMessage("Review the catalogue and date, then resubmit.");
-                  setMessageType("info");
-                }}
-                className="ml-4 underline font-medium hover:no-underline"
-              >
-                Start correction
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ── Two-pane body ── */}
-      <div className="flex-1 flex min-h-0 max-w-screen-xl mx-auto w-full px-8 py-6 gap-6">
-
-        {/* LEFT: Product catalogue */}
-        <div className="flex-1 flex flex-col min-w-0">
-          {/* Search bar */}
-          <div className="relative mb-4">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-wp-muted" />
-            <input
-              placeholder="Search catalogue…"
-              aria-label="Search catalogue"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2.5 border border-wp-border rounded-card text-sm bg-white text-wp-ink placeholder:text-wp-muted focus:outline-none focus:ring-2 focus:ring-wp-green"
-            />
-          </div>
-
-          {/* Products list */}
-          {filteredProducts.length === 0 ? (
-            <div className="card-panel flex flex-col items-center justify-center p-12 text-center border-dashed border-2 text-wp-muted">
-              <Package size={40} className="mb-3 text-wp-border" />
-              <p className="font-medium text-wp-ink">No products found</p>
-              <p className="text-sm mt-1">{search ? "Try a different search term." : "No catalogue items available for your outlet."}</p>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-2 overflow-y-auto pr-1">
-              {filteredProducts.map((p) => {
-                const qty = cart[p.productId] ?? 0;
-                return (
-                  <div
-                    key={p.productId}
-                    className={`card-panel p-4 flex items-center gap-4 transition-colors ${qty > 0 ? "border-wp-green bg-wp-pale" : "hover:border-wp-green/40"}`}
-                  >
-                    {/* Product info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium text-wp-ink text-sm truncate">{p.name}</p>
-                        {p.temperature === "reefer" && (
-                          <span className="flex items-center gap-1 text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">
-                            <Snowflake size={10} /> CHILLED
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-xs text-wp-muted mt-0.5">
-                        {p.unit} · {p.weightKg} kg/unit · max {p.maxQuantity.toLocaleString()}
-                      </p>
-                    </div>
-
-                    {/* Quantity stepper */}
-                    <div className="flex items-center gap-2 shrink-0">
-                      <button
-                        disabled={busy || !!request.current || qty === 0}
-                        onClick={() => setCart({ ...cart, [p.productId]: Math.max(0, qty - 1) })}
-                        className="w-8 h-8 rounded-md border border-wp-border text-wp-muted hover:border-wp-green hover:text-wp-green disabled:opacity-30 font-bold text-lg leading-none flex items-center justify-center transition-colors"
-                      >
-                        −
-                      </button>
-                      <input
-                        type="number"
-                        min={0}
-                        max={p.maxQuantity}
-                        step={1}
-                        value={qty}
-                        disabled={busy || !!request.current}
-                        onChange={(e) => setCart({ ...cart, [p.productId]: Math.max(0, Math.min(p.maxQuantity, Number(e.target.value))) })}
-                        className="w-16 text-center border border-wp-border rounded-md py-1.5 text-sm font-mono tabular-nums bg-white focus:outline-none focus:ring-2 focus:ring-wp-green"
-                      />
-                      <button
-                        disabled={busy || !!request.current || qty >= p.maxQuantity}
-                        onClick={() => setCart({ ...cart, [p.productId]: Math.min(p.maxQuantity, qty + 1) })}
-                        className="w-8 h-8 rounded-md border border-wp-border text-wp-muted hover:border-wp-green hover:text-wp-green disabled:opacity-30 font-bold text-lg leading-none flex items-center justify-center transition-colors"
-                      >
-                        +
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* RIGHT: Order summary */}
-        <div className="w-80 shrink-0 flex flex-col gap-4">
-          <div className="card-panel p-5 flex flex-col gap-4 sticky top-6">
-            <div className="flex items-center gap-2">
-              <ShoppingCart size={18} className="text-wp-green" />
-              <h2 className="font-semibold text-wp-ink">Order summary</h2>
-            </div>
-
-            {cartProducts.length === 0 ? (
-              <p className="text-sm text-wp-muted py-4 text-center border-dashed border-2 rounded-card">
-                Add products from the catalogue
-              </p>
-            ) : (
-              <div className="flex flex-col gap-2">
-                {cartProducts.map((p) => (
-                  <div key={p.productId} className="flex items-center justify-between text-sm">
-                    <span className="text-wp-ink truncate flex-1 mr-2">{p.name}</span>
-                    <span className="font-mono tabular-nums text-wp-muted shrink-0">× {cart[p.productId]}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <div className="border-t border-wp-border pt-3 flex flex-col gap-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-wp-muted">Total units</span>
-                <span className="font-semibold tabular-nums text-wp-ink">{totalUnits.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-wp-muted">Est. weight</span>
-                <span className="font-semibold tabular-nums text-wp-ink">{totalWeight.toFixed(1)} kg</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-wp-muted">Est. volume</span>
-                <span className="font-semibold tabular-nums text-wp-ink">{totalVolume.toFixed(3)} m³</span>
-              </div>
-              {hasChilled && (
-                <div className="flex items-center gap-1.5 mt-1 text-blue-600 bg-blue-50 rounded-md px-2.5 py-2">
-                  <Snowflake size={14} />
-                  <span className="text-xs font-medium">Requires chilled vehicle</span>
-                </div>
-              )}
-            </div>
-
-            <div className="border-t border-wp-border pt-3 text-xs text-wp-muted">
-              Submission is a request subject to fleet planning. Confirmed ETA appears only once a route is published.
-            </div>
-
-            {request.current && !canCorrect && (
-              <p className="text-xs text-wp-muted bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
-                Retrying with the same request ID to prevent duplicate orders.
-              </p>
-            )}
-
-            <button
-              disabled={busy || !catalogue || !date || totalUnits === 0}
-              onClick={save}
-              className="btn btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-40"
-            >
-              {busy ? (
-                <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Submitting…</>
-              ) : (
-                <><CheckCircle2 size={16} /> Review · submit request</>
-              )}
-            </button>
-          </div>
-        </div>
+      <div className="p-[14px] rounded-[10px] bg-[#eaf6ef] border border-[#d6e9dd] text-[#146b45] text-[13px] leading-[1.6] my-[14px]">
+        Order by {catalogue?.serviceOptions?.cutoff || "4:00 PM"}. Requested delivery is subject to fleet planning.
       </div>
+
+      <label className="block text-[13px] font-[650] my-[18px]">
+        Delivery date
+        <select 
+          disabled={busy || !!request.current} 
+          value={date} 
+          onChange={e => setDate(e.target.value)} 
+          className="block w-full mt-[8px] min-h-[48px] p-[12px] border border-[#cedbd1] rounded-[9px] bg-white text-[#17221d] font-[400] text-[16px]"
+        >
+          {catalogue?.serviceOptions?.serviceDates?.map((d: string) => <option key={d}>{d}</option>)}
+        </select>
+      </label>
+      
+      <label className="block text-[13px] font-[650] my-[18px]">
+        Delivery window
+        <select disabled={busy || !!request.current} className="block w-full mt-[8px] min-h-[48px] p-[12px] border border-[#cedbd1] rounded-[9px] bg-white text-[#17221d] font-[400] text-[16px]">
+          <option>06:00–08:00 AM</option>
+          <option>08:00–10:00 AM</option>
+        </select>
+      </label>
+
+      <div className="relative my-[15px]">
+        <Search className="absolute left-[14px] top-[14px] text-[#8a968c]" size={20} />
+        <input 
+          placeholder="Search the Fresh catalogue" 
+          aria-label="Search catalogue" 
+          value={search} 
+          onChange={e => setSearch(e.target.value)} 
+          className="w-full border border-[#dce5df] bg-white rounded-[11px] p-[14px] pl-[42px] text-[16px]" 
+        />
+      </div>
+
+      <div className="flex flex-col gap-[15px] mt-[5px]">
+        {catalogue?.products.filter((p: any) => p.name.toLowerCase().includes(search.toLowerCase())).map((p: any) => (
+          <div key={p.productId} className="bg-white border border-[#dce5df] rounded-[14px] p-[16px]">
+            <h3 className="text-[14px] font-[650]">{p.name}</h3>
+            <p className="text-[12px] text-[#6b7870] mt-[4px]">{p.unit} {p.maxQuantity ? `(Max: ${p.maxQuantity})` : ''}</p>
+            
+            <div className="flex items-center justify-between mt-[15px]">
+              <span className="inline-flex items-center gap-[5px] rounded-[6px] px-[8px] py-[5px] text-[10px] font-[650] bg-[#eaf6ef] text-[#146b45] whitespace-nowrap">
+                <Snowflake size={12} /> Chilled · 2–4°C
+              </span>
+              
+              <div className="flex items-center gap-[2px]">
+                <button 
+                  disabled={busy || !!request.current}
+                  onClick={() => updateCart(p.productId, -1, p.maxQuantity)} 
+                  className="w-[48px] h-[48px] p-0 flex items-center justify-center bg-white border border-transparent rounded-[8px] text-[21px] text-[#17221d] active:bg-[#f6f8f7]"
+                >
+                  <Minus size={20} />
+                </button>
+                <input 
+                  type="number" 
+                  min={0} 
+                  max={p.maxQuantity ?? 1000} 
+                  disabled={busy || !!request.current}
+                  value={cart[p.productId] ?? 0}
+                  onChange={e => setCart({ ...cart, [p.productId]: Number(e.target.value) })} 
+                  className="w-[50px] h-[48px] text-center border border-[#dce5df] rounded-[8px] font-semibold text-[16px]" 
+                />
+                <button 
+                  disabled={busy || !!request.current}
+                  onClick={() => updateCart(p.productId, 1, p.maxQuantity)} 
+                  className="w-[48px] h-[48px] p-0 flex items-center justify-center bg-white border border-transparent rounded-[8px] text-[21px] text-[#17221d] active:bg-[#f6f8f7]"
+                >
+                  <Plus size={20} />
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+        {catalogue?.products && catalogue.products.filter((p: any) => p.name.toLowerCase().includes(search.toLowerCase())).length === 0 && (
+          <div className="p-8 text-center text-[#6b7870]">No products match your search.</div>
+        )}
+      </div>
+
+      <div className="flex justify-between items-center bg-white p-[18px] border border-[#dce5df] rounded-[14px] mt-[20px] mb-[15px]">
+        <strong className="text-[14px] font-[650]">Your order</strong>
+        <span className="font-[650] text-[#146b45]">{totalItems} packs</span>
+      </div>
+
+      <div className="grid gap-[10px] mt-[10px] mb-[20px]">
+        <button 
+          disabled={busy || !catalogue || !date || totalItems === 0} 
+          onClick={save}
+          className="w-full bg-[#146b45] disabled:bg-[#146b45]/50 text-white font-semibold text-[14px] h-[48px] rounded-[12px] flex items-center justify-center gap-[9px] hover:bg-[#105b3a] transition-colors"
+        >
+          Review order <ArrowRight size={18} />
+        </button>
+        {canCorrect && (
+          <button 
+            disabled={busy} 
+            onClick={() => { request.current = undefined; setCanCorrect(false); setMessage("The server rejected the original request. Review the catalogue/date before creating a new correction."); }} 
+            className="w-full bg-white text-[#17221d] border border-[#dce5df] font-semibold text-[14px] h-[48px] rounded-[12px] flex items-center justify-center gap-[9px] hover:bg-[#f0f6f1] transition-colors"
+          >
+            Review correction
+          </button>
+        )}
+        {!canCorrect && (
+          <button className="w-full bg-transparent text-[#17221d] border-transparent font-semibold text-[14px] h-[48px] rounded-[12px] flex items-center justify-center gap-[9px] hover:bg-black/5 transition-colors">
+            Save draft for later
+          </button>
+        )}
+      </div>
+      
+      {request.current && !canCorrect && <p className="text-[11px] leading-[1.5] text-[#6b7870] text-center mb-[20px]">Retry preserves the original request ID. An uncertain response must not create a second order.</p>}
+      <p className="text-[11px] leading-[1.5] text-[#6b7870] text-center mb-[20px]">Your cart is stored on this browser as you make changes.</p>
     </div>
   );
 }

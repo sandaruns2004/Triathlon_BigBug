@@ -50,7 +50,13 @@ return async function handle(req: NextRequest, context: { params: { path: string
     if (joined === "store/service-options" && method === "GET") return response((await storeCatalogue(principal)).serviceOptions);
     if (joined === "store/orders" && method === "GET") return response({ orders: await storeOrders(principal) });
     if (joined === "store/orders" && method === "POST") return response(await applyOperation(principal, { ...await body(req), type: "store_order_created" }));
-    if (path[0] === "store" && path[1] === "orders" && path.length === 3 && method === "GET") return response(await orderDetail(principal, identifier(path[2])));
+    if (path[0] === "store" && path[1] === "orders" && path.length === 3 && method === "GET") {
+      const order = await orderDetail(principal, identifier(path[2]));
+      const { db } = await import("@/lib/db/firebase");
+      const exceptionsSnap = await db.collection("exceptions").where("orderId", "==", identifier(path[2])).get();
+      const exceptions = exceptionsSnap.docs.map((d: any) => d.data()).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      return response({ order, exceptions });
+    }
     if (path[0] === "store" && path[1] === "orders" && path[3] === "delivery-note" && method === "GET") return response(await deliveryNote(principal, identifier(path[2])));
     if (path[0] === "store" && path[1] === "orders" && path.length === 4 && method === "POST") {
       const actionTypes: Record<string, string> = { receipt: "receipt_recorded", issues: "store_issue", acknowledgments: "update_acknowledged" };

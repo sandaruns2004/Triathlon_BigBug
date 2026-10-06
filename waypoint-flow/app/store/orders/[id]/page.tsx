@@ -2,360 +2,319 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { api, envelope, submit } from "@/lib/mobile/browser";
-import { 
-  ArrowLeft, CheckCircle2, Clock, Truck, Package, AlertTriangle, 
-  FileText, MessageSquareWarning, SearchX, CalendarClock, ChevronRight
-} from "lucide-react";
-
-const STATUS_ORDER = ["pending", "planned", "loading", "on_route", "delivered", "receipted"];
-const STATUS_LABELS: Record<string, string> = {
-  pending: "Submitted",
-  planned: "Planned",
-  loading: "Loading",
-  on_route: "On route",
-  delivered: "Delivered",
-  partial: "Partial delivery",
-  receipted: "Receipt confirmed",
-  deferred: "Deferred",
-};
+import Link from "next/link";
+import { ArrowLeft, CheckCircle2, AlertCircle, HelpCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default function StoreOrderPage() {
-  const { id } = useParams();
+  const { id } = useParams(), request = useRef<any>();
   const router = useRouter();
-  const request = useRef<any>();
-  
   const [order, setOrder] = useState<any>();
   const [note, setNote] = useState<any>();
   const [qty, setQty] = useState<Record<string, number>>({});
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
-  const [messageType, setMessageType] = useState<"error" | "info" | "success">("info");
-  const [loading, setLoading] = useState(true);
-
+  const [isContacting, setIsContacting] = useState(false);
+  const [contactReason, setContactReason] = useState("");
+  const [exceptions, setExceptions] = useState<any[]>([]);
+  
   async function refresh() {
     try {
-      const o = await api("store/orders/" + id);
-      setOrder(o);
-      setQty(Object.fromEntries((o.deliveredLines ?? []).map((l: any) => [l.lineId, l.deliveredQty])));
-      if (o.receiptId) setNote(await api("store/orders/" + id + "/delivery-note"));
-      setLoading(false);
-    } catch (e) {
-      setMessage((e as Error).message);
-      setMessageType("error");
-      setLoading(false);
+      const data = await api("store/orders/" + id); 
+      setOrder(data.order);
+      setExceptions(data.exceptions || []);
+      setQty(Object.fromEntries((data.order.deliveredLines ?? []).map((l: any) => [l.lineId, l.deliveredQty])));
+      if (data.order.receiptId) setNote(await api("store/orders/" + id + "/delivery-note"));
+    } catch (e) { 
+      setMessage((e as Error).message); 
     }
   }
-
+  
   useEffect(() => { refresh(); }, [id]);
-
+  
   async function receipt() {
-    if (busy) return;
-    setBusy(true);
-    setMessage("");
+    if (busy) return; 
+    setBusy(true); 
     try {
-      request.current ??= envelope(
-        "receipt_recorded",
-        {
-          lines: order.deliveredLines.map((l: any) => ({
-            lineId: l.lineId,
-            unit: l.unit,
-            receivedQty: qty[l.lineId],
-            reason: qty[l.lineId] !== l.deliveredQty ? reason : "",
-          })),
-          note: reason,
-          evidenceIds: [],
-        },
-        { orderId: id },
-        { receiptVersion: order.receiptVersion ?? 0, proofVersion: order.proofVersion }
-      );
-      await submit(request.current);
-      setMessage("Receipt confirmed successfully.");
-      setMessageType("success");
+      request.current ??= envelope("receipt_recorded", { 
+        lines: order.deliveredLines.map((l: any) => ({ 
+          lineId: l.lineId, 
+          unit: l.unit, 
+          receivedQty: qty[l.lineId], 
+          reason: qty[l.lineId] !== l.deliveredQty ? reason : "" 
+        })), 
+        note: reason, 
+        evidenceIds: [] 
+      }, { orderId: id }, { receiptVersion: order.receiptVersion ?? 0, proofVersion: order.proofVersion });
+      await submit(request.current); 
       await refresh();
-    } catch (e) {
-      setMessage((e as Error).message);
-      setMessageType("error");
-    } finally {
-      setBusy(false);
+    } catch (e) { 
+      setMessage((e as Error).message); 
+    } finally { 
+      setBusy(false); 
     }
   }
-
+  
   async function update(type: string) {
-    if (busy) return;
-    setBusy(true);
-    setMessage("");
+    if (busy) return; 
+    setBusy(true); 
     try {
       const payload = type === "store_issue" ? { category: "business_impact", reason, lineIds: [], evidenceIds: [] } : {};
-      await submit(envelope(type, payload, { orderId: id }, type === "update_acknowledged" ? { updateVersion: order.updateVersion ?? 0 } : {}));
-      setMessage("Server accepted the update.");
-      setMessageType("success");
-      if (type === "store_issue") setReason("");
+      await submit(envelope(type, payload, { orderId: id }, type === "update_acknowledged" ? { updateVersion: order.updateVersion ?? 0 } : {})); 
+      setMessage("Server accepted the update."); 
       await refresh();
-    } catch (e) {
-      setMessage((e as Error).message);
-      setMessageType("error");
-    } finally {
-      setBusy(false);
+    } catch (e) { 
+      setMessage((e as Error).message); 
+    } finally { 
+      setBusy(false); 
     }
   }
 
-  if (loading) {
-    return (
-      <div className="flex-1 flex items-center justify-center min-h-[60vh]">
-        <div className="text-center">
-          <div className="w-10 h-10 border-4 border-wp-green border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-wp-muted text-sm">Loading order details…</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!order) {
-    return (
-      <div className="flex-1 flex items-center justify-center min-h-[60vh]">
-        <div className="text-center">
-          <SearchX size={40} className="mx-auto mb-4 text-wp-muted" />
-          <p className="text-wp-ink font-medium">Order not found</p>
-          <button onClick={() => router.push("/store")} className="text-wp-green text-sm hover:underline mt-2">
-            Return to dashboard
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  const isDeferred = order.status === "deferred";
-  const needsReceipt = order.proofId && !order.receiptId && ["delivered", "partial"].includes(order.status);
-  const isReceipted = !!order.receiptId;
-  const currentStatusIndex = STATUS_ORDER.indexOf(order.status === "partial" ? "delivered" : order.status);
+  const isDelivered = ["delivered", "partial"].includes(order?.status);
+  const isReceiptConfirmed = !!order?.receiptId;
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 bg-wp-canvas">
-      {/* ── Page header ── */}
-      <div className="px-8 py-6 border-b border-wp-border bg-white sticky top-0 z-10">
-        <div className="max-w-screen-xl mx-auto flex flex-col gap-4">
-          <button onClick={() => router.push("/store")} className="flex items-center gap-1.5 text-sm text-wp-muted hover:text-wp-ink w-fit transition-colors">
-            <ArrowLeft size={16} /> Back to dashboard
-          </button>
-
-          <div className="flex items-start justify-between">
-            <div>
-              <div className="flex items-center gap-3 mb-1">
-                <h1 className="text-2xl font-bold text-wp-ink">{String(id)}</h1>
-                <span className={`px-2.5 py-1 text-xs font-bold rounded-full ${
-                  isDeferred ? "bg-amber-100 text-amber-800" :
-                  isReceipted ? "bg-green-100 text-green-800" :
-                  needsReceipt ? "bg-blue-100 text-blue-800" :
-                  "bg-slate-100 text-slate-800"
-                }`}>
-                  {STATUS_LABELS[order.status] ?? order.status.toUpperCase()}
-                </span>
-              </div>
-              <p className="text-sm text-wp-muted">
-                {order.outletName} · {order.brand} Brand · Requested for {order.requestedDate ?? order.planDate}
-              </p>
-            </div>
-            
-            <button className="btn text-sm font-medium border border-wp-border bg-white text-wp-ink hover:bg-slate-50">
-              Contact Operations
-            </button>
-          </div>
-        </div>
+    <div className="flex flex-col h-full bg-[#f6f8f7] px-[22px] pt-[10px]">
+      {message && <p role="status" className="py-2 text-[13px] text-[#ae483a]">{message}</p>}
+      
+      <div className="flex items-center gap-[8px] mb-[18px]">
+        <Link href="/store" className="bg-transparent border-none p-2 -ml-[12px] text-[#17221d]">
+          <ArrowLeft size={24} strokeWidth={2.5} />
+        </Link>
+        <h1 className="text-[22px] font-[650] tracking-tight m-0">Order {String(id).split("-")[0]}-{String(id).split("-")[1]?.substring(0, 6).toUpperCase()}</h1>
       </div>
 
-      <div className="flex-1 max-w-screen-xl w-full mx-auto px-8 py-6 overflow-y-auto space-y-6">
-        
-        {/* Messages */}
-        {message && (
-          <div className={`p-4 rounded-card flex items-start gap-3 text-sm ${
-            messageType === "error" ? "bg-red-50 border border-red-200 text-red-700" :
-            messageType === "success" ? "bg-green-50 border border-green-200 text-green-800" :
-            "bg-blue-50 border border-blue-200 text-blue-800"
-          }`}>
-            <AlertTriangle size={18} className="shrink-0 mt-0.5" />
-            <p>{message}</p>
-          </div>
-        )}
-
-        {/* ── Progress timeline ── */}
-        {!isDeferred && (
-          <div className="card-panel p-6">
-            <div className="flex items-center justify-between relative">
-              <div className="absolute left-6 right-6 top-1/2 -translate-y-1/2 h-0.5 bg-wp-border z-0" />
-              {STATUS_ORDER.map((s, idx) => {
-                const active = currentStatusIndex >= idx;
-                const current = currentStatusIndex === idx;
-                return (
-                  <div key={s} className="relative z-10 flex flex-col items-center gap-2 bg-white px-2">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-colors ${
-                      active ? "border-wp-green bg-wp-green text-white" : "border-wp-border bg-white text-wp-muted"
-                    } ${current && !isReceipted ? "ring-4 ring-green-100" : ""}`}>
-                      {active ? <CheckCircle2 size={16} /> : <div className="w-2 h-2 rounded-full bg-wp-border" />}
-                    </div>
-                    <span className={`text-xs font-medium ${active ? "text-wp-ink" : "text-wp-muted"}`}>
-                      {STATUS_LABELS[s]}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* ── Deferral alert ── */}
-        {isDeferred && (
-          <div className="card-panel p-6 bg-amber-50 border border-amber-200">
-            <div className="flex items-start gap-4">
-              <CalendarClock size={24} className="text-amber-600 mt-1 shrink-0" />
-              <div className="flex-1">
-                <h2 className="text-lg font-bold text-amber-900">Capacity Deferral</h2>
-                <p className="text-sm text-amber-800 mt-1">
-                  Sorry, this request could not travel as planned. 
-                  <span className="font-semibold block mt-1">Reason: {order.deferralReason}</span>
-                </p>
-                <div className="flex items-center gap-4 mt-4">
-                  <p className="text-sm font-medium text-amber-900">Proposed date: {order.proposedDate ?? order.revisedDate}</p>
-                  <button 
-                    disabled={busy} 
-                    onClick={() => update("update_acknowledged")} 
-                    className="btn bg-amber-600 text-white hover:bg-amber-700 border-none text-sm"
-                  >
-                    Acknowledge update
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+      {!order ? (
+        <div className="p-8 text-center text-[#6b7870]">Loading order details...</div>
+      ) : (
+        <>
+          <span className="inline-flex self-start items-center gap-[5px] rounded-[6px] px-[8px] py-[5px] text-[10px] font-[650] bg-[#eaf6ef] text-[#146b45] whitespace-nowrap mb-[10px]">
+            <CheckCircle2 size={12} /> {isReceiptConfirmed ? "Receipt confirmed" : order.status}
+          </span>
           
-          {/* Main content - Line items */}
-          <div className="lg:col-span-2 space-y-6">
-            
-            {/* Delivery Card */}
-            {order.tracking && (
-              <div className="card-panel p-5 flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
-                  <Truck size={24} className="text-blue-600" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-bold text-wp-ink">Delivery on Route</h3>
-                  <p className="text-sm text-wp-muted mt-1">
-                    Vehicle {order.tracking.vehicleId} · {order.tracking.status}
-                    {order.tracking.held ? <span className="text-amber-600 font-medium ml-2">⚠️ Operations hold</span> : ""}
-                  </p>
-                </div>
-              </div>
-            )}
+          <h1 className="text-[25px] font-[650] tracking-tight my-[10px] leading-[1.2]">
+            {isReceiptConfirmed ? "All received." : isDelivered ? "Your delivery is here." : "Your order is processing."}
+          </h1>
+          <p className="text-[13px] text-[#6b7870] leading-[1.5]">
+            Fresh · Nugegoda · {order.requestedDate ?? order.planDate} <br/>
+            {isDelivered && "Delivered to rear receiving bay"}
+            {order.tracking && !isDelivered && `Trip: ${order.tracking.status} · vehicle ${order.tracking.vehicleId}`}
+          </p>
 
-            {/* Line Items Table */}
-            <div className="card-panel overflow-hidden">
-              <div className="px-5 py-4 border-b border-wp-border bg-slate-50 flex items-center justify-between">
-                <h3 className="font-bold text-wp-ink flex items-center gap-2">
-                  <Package size={18} /> Order Contents
-                </h3>
+          {order.status === "deferred" && (
+            <div className="p-[14px] rounded-[12px] bg-[#fff7e8] border border-[#efdfbe] text-[#92611a] my-[15px]">
+              <h2 className="text-[14px] font-[650] mb-[5px]">Capacity deferral</h2>
+              <p className="text-[12px] mb-[10px]">Sorry, this request could not travel as planned.</p>
+              <p className="text-[12px] mb-[15px]">{order.deferralReason} · proposed date {order.proposedDate ?? order.revisedDate}</p>
+              <button 
+                disabled={busy} 
+                onClick={() => update("update_acknowledged")} 
+                className="w-full bg-white text-[#92611a] border border-[#efdfbe] font-semibold text-[13px] h-[40px] rounded-[9px]"
+              >
+                Acknowledge update
+              </button>
+            </div>
+          )}
+
+          <div className="bg-white border border-[#dce5df] rounded-[14px] p-[20px] mt-[20px] mb-[15px]">
+            <div className="flex flex-col gap-[20px]">
+              <div className="flex gap-[15px] relative">
+                <div className="absolute left-[5px] top-[10px] bottom-0 w-[2px] bg-[#eaf6ef]"></div>
+                <div className="w-[12px] h-[12px] rounded-full bg-[#146b45] z-10 shrink-0 mt-[2px]"></div>
+                <div>
+                  <h3 className="text-[14px] font-[650]">Submitted</h3>
+                  <p className="text-[12px] text-[#6b7870] mt-[2px]">{order.requestedDate ?? order.planDate}</p>
+                </div>
               </div>
-              <div className="divide-y divide-wp-border">
-                {/* When receipting (needsReceipt) or already receipted (isReceipted) -> show delivered lines */}
-                {needsReceipt || isReceipted ? (
-                  (order.deliveredLines ?? []).map((l: any) => (
-                    <div key={l.lineId} className="px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                      <div>
-                        <p className="font-medium text-wp-ink text-sm">{l.name}</p>
-                        <p className="text-xs text-wp-muted mt-0.5">Delivered: {l.deliveredQty} {l.unit}</p>
-                      </div>
-                      <div className="flex items-center gap-3 shrink-0">
-                        <span className="text-xs font-medium text-wp-muted">Received:</span>
-                        <input
-                          disabled={busy || isReceipted || !!request.current}
-                          type="number"
-                          step={1}
-                          min={0}
-                          max={l.deliveredQty}
-                          value={qty[l.lineId] ?? 0}
-                          onChange={(e) => setQty({ ...qty, [l.lineId]: Math.max(0, Math.min(l.deliveredQty, Number(e.target.value))) })}
-                          className="border border-wp-border rounded-md px-3 py-1.5 w-24 text-sm font-mono text-center focus:ring-2 focus:ring-wp-green focus:outline-none disabled:bg-slate-50 disabled:text-wp-muted"
-                        />
-                        <span className="text-xs font-medium text-wp-muted w-10">{l.unit}</span>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  /* Pending/planned -> show ordered lines */
-                  (order.lines ?? []).map((l: any) => (
-                    <div key={l.lineId} className="px-5 py-4 flex items-center justify-between">
-                      <p className="font-medium text-wp-ink text-sm">{l.name}</p>
-                      <p className="text-sm font-mono text-wp-muted">{l.quantity} {l.unit}</p>
-                    </div>
-                  ))
-                )}
+              <div className="flex gap-[15px] relative">
+                <div className="absolute left-[5px] top-[10px] bottom-0 w-[2px] bg-[#eaf6ef]"></div>
+                <div className={cn("w-[12px] h-[12px] rounded-full z-10 shrink-0 mt-[2px]", order.tracking || isDelivered ? "bg-[#146b45]" : "bg-[#dce5df]")}></div>
+                <div>
+                  <h3 className="text-[14px] font-[650]">Planned</h3>
+                  <p className="text-[12px] text-[#6b7870] mt-[2px]">{order.tracking ? "Allocated to trip" : "Pending"}</p>
+                </div>
+              </div>
+              <div className="flex gap-[15px]">
+                <div className={cn("w-[12px] h-[12px] rounded-full z-10 shrink-0 mt-[2px]", isDelivered ? "bg-[#146b45]" : "bg-[#dce5df]")}></div>
+                <div>
+                  <h3 className="text-[14px] font-[650]">Delivered</h3>
+                  <p className="text-[12px] text-[#6b7870] mt-[2px]">{isDelivered ? "Delivery recorded" : "Waiting"}</p>
+                </div>
               </div>
             </div>
-
-            {/* Delivery Note reference */}
-            {note && (
-              <div className="card-panel p-5 border-l-4 border-wp-green">
-                <h3 className="font-bold text-wp-ink flex items-center gap-2 mb-3">
-                  <FileText size={18} /> Digital Delivery Note {note.reference}
-                </h3>
-                <div className="text-sm text-wp-muted space-y-1">
-                  <p>Issued: {note.issuedAt}</p>
-                  <p>Revision: {note.revision}</p>
-                  {note.discrepancy && <p className="text-amber-600 font-medium mt-2">⚠️ Discrepancy reported</p>}
-                </div>
-              </div>
-            )}
           </div>
 
-          {/* Sidebar - Actions */}
-          <div className="space-y-6">
-            <div className="card-panel p-5 space-y-4 sticky top-6">
-              <h3 className="font-bold text-wp-ink border-b border-wp-border pb-3">Actions</h3>
+          {order.proofId && !order.receiptId && isDelivered && (
+            <>
+              <h2 className="text-[19px] font-[650] mt-[10px] tracking-[-0.5px]">Everything as expected?</h2>
+              <p className="text-[13px] text-[#6b7870] mt-[5px] mb-[15px]">Compare quantities and check the condition of your goods.</p>
               
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-wp-ink">Report issue / Discrepancy note</label>
-                <textarea
-                  maxLength={1000}
-                  value={reason}
-                  onChange={(e) => setReason(e.target.value)}
-                  placeholder="Describe missing items, damage, or temperature concerns..."
-                  disabled={busy || (isReceipted && !reason.trim())}
-                  className="w-full border border-wp-border rounded-card p-3 text-sm focus:ring-2 focus:ring-wp-green focus:outline-none min-h-[100px] resize-none disabled:bg-slate-50"
-                />
+              <div className="bg-white border border-[#dce5df] rounded-[14px] p-[20px] mb-[20px] overflow-x-auto">
+                <table className="w-full text-left text-[13px]">
+                  <thead>
+                    <tr>
+                      <th className="pb-[12px] font-[600] text-[#6b7870] text-[11px] uppercase tracking-wide">Item</th>
+                      <th className="pb-[12px] font-[600] text-[#6b7870] text-[11px] uppercase tracking-wide px-2">Ordered</th>
+                      <th className="pb-[12px] font-[600] text-[#6b7870] text-[11px] uppercase tracking-wide px-2">Delivered</th>
+                      <th className="pb-[12px] font-[600] text-[#6b7870] text-[11px] uppercase tracking-wide px-2">Received</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(order.deliveredLines ?? []).map((l: any) => (
+                      <tr key={l.lineId} className="border-t border-[#dce5df]">
+                        <td className="py-[14px] font-[600]">{l.name || l.lineId}</td>
+                        <td className="py-[14px] px-2 text-[#6b7870]">{l.deliveredQty}</td>
+                        <td className="py-[14px] px-2 text-[#6b7870]">{l.deliveredQty}</td>
+                        <td className="py-[14px] px-2">
+                          <input 
+                            disabled={busy || !!order.receiptId || !!request.current} 
+                            type="number" step={1} min={0} max={l.deliveredQty} 
+                            value={qty[l.lineId] ?? 0} 
+                            onChange={e => setQty({ ...qty, [l.lineId]: Number(e.target.value) })} 
+                            className="w-[60px] p-[8px] border border-[#dce5df] rounded-[6px] text-center" 
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
+              
+              <label className="block text-[13px] font-[650] mb-[20px]">
+                Receipt difference / business impact
+                <textarea 
+                  maxLength={1000} 
+                  value={reason} 
+                  onChange={e => setReason(e.target.value)} 
+                  placeholder="Optional notes or discrepancy details"
+                  className="w-full mt-[8px] min-h-[85px] p-[12px] border border-[#dce5df] rounded-[9px] font-normal text-[16px] resize-y" 
+                />
+              </label>
 
-              {needsReceipt && (
-                <button
-                  disabled={busy}
-                  onClick={receipt}
-                  className="btn btn-primary w-full flex items-center justify-center gap-2"
+              <div className="grid gap-[10px] mb-[20px]">
+                <button 
+                  disabled={busy} 
+                  onClick={receipt} 
+                  className="w-full bg-[#146b45] text-white font-semibold text-[14px] h-[48px] rounded-[12px]"
                 >
-                  <CheckCircle2 size={16} /> Confirm Receipt
+                  Confirm all items received
+                </button>
+                <button 
+                  disabled={busy || !reason.trim()} 
+                  onClick={() => update("store_issue")} 
+                  className="w-full bg-white text-[#17221d] border border-[#dce5df] font-semibold text-[14px] h-[48px] rounded-[12px] flex items-center justify-center gap-2"
+                >
+                  <AlertCircle size={18} /> Report an issue
+                </button>
+              </div>
+            </>
+          )}
+
+          {note && (
+            <div className="bg-white border border-[#dce5df] rounded-[14px] p-[20px] mt-[10px] mb-[20px]">
+              <h2 className="text-[16px] font-[650] mb-[15px]">Digital delivery note {note.reference}</h2>
+              <p className="text-[13px] text-[#6b7870] mb-[15px]">Issued {note.issuedAt} · revision {note.revision}{note.discrepancy ? " · discrepancy reported" : ""}</p>
+              
+              {["orderedLines", "approvedLines", "deliveredLines", "acceptedLines"].map(key => (
+                (note[key] && note[key].length > 0) ? (
+                  <div key={key} className="mb-[15px] last:mb-0">
+                    <h3 className="text-[12px] font-[700] uppercase tracking-wide text-[#6b7870] mb-[8px]">{key.replace("Lines", "")}</h3>
+                    {(note[key] ?? []).map((l: any) => (
+                      <div key={l.lineId} className="flex justify-between py-[8px] border-b border-[#f0f3f1] last:border-0 text-[13px]">
+                        <span>{l.lineId}</span>
+                        <strong className="font-[650]">{l.quantity ?? l.deliveredQty ?? l.receivedQty} {l.unit}</strong>
+                      </div>
+                    ))}
+                  </div>
+                ) : null
+              ))}
+            </div>
+          )}
+
+          {exceptions.length > 0 && (
+            <div className="bg-white border border-[#dce5df] rounded-[14px] p-[20px] mt-[10px] mb-[20px]">
+              <h2 className="text-[16px] font-[650] mb-[15px] flex items-center gap-[8px]">
+                <HelpCircle size={18} className="text-[#8a968c]" />
+                Messages sent to operations
+              </h2>
+              <div className="flex flex-col gap-[15px]">
+                {exceptions.map((ex) => (
+                  <div key={ex.exceptionId} className="border-b border-[#f0f3f1] last:border-0 pb-[15px] last:pb-0">
+                    <p className="text-[14px] leading-[1.5] text-[#17221d] mb-[5px]">{ex.detail}</p>
+                    <div className="flex items-center justify-between text-[11px] font-[650]">
+                      <span className="text-[#6b7870]">{new Date(ex.createdAt).toLocaleString([], { dateStyle: "short", timeStyle: "short" })}</span>
+                      <span className={`px-[6px] py-[3px] rounded-[4px] uppercase tracking-wider ${ex.resolved ? 'bg-[#eaf6ef] text-[#146b45]' : 'bg-[#fcf2df] text-[#92611a]'}`}>
+                        {ex.resolved ? "Resolved" : "Pending review"}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {!order.proofId && (
+            <div className="grid gap-[10px] mt-[10px] mb-[20px]">
+              <button onClick={refresh} className="w-full bg-white text-[#17221d] border border-[#dce5df] font-semibold text-[14px] h-[48px] rounded-[12px] hover:bg-black/5 transition-colors">
+                Refresh status
+              </button>
+              
+              {isContacting ? (
+                <div className="bg-white border border-[#dce5df] rounded-[14px] p-[16px] animate-in fade-in slide-in-from-bottom-2 duration-200">
+                  <label className="block text-[13px] font-[650] mb-[8px] text-[#146b45]">
+                    Message to operations
+                  </label>
+                  <textarea 
+                    autoFocus
+                    maxLength={500} 
+                    value={contactReason} 
+                    onChange={e => setContactReason(e.target.value)} 
+                    placeholder="e.g., Where is my truck?"
+                    className="w-full min-h-[80px] p-[12px] bg-[#f6f8f7] border-none rounded-[9px] font-normal text-[14px] resize-none outline-none focus:ring-2 focus:ring-[#146b45]/20 transition-all mb-[12px]" 
+                  />
+                  <div className="flex gap-[8px]">
+                    <button 
+                      onClick={() => { setIsContacting(false); setContactReason(""); }}
+                      className="flex-1 bg-transparent text-[#6b7870] font-semibold text-[13px] h-[40px] rounded-[9px] hover:bg-black/5 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      disabled={busy || !contactReason.trim()}
+                      onClick={async () => {
+                        if (busy || !contactReason.trim()) return; 
+                        setBusy(true); 
+                        try {
+                          await submit(envelope("store_issue", { category: "business_impact", reason: contactReason, lineIds: [], evidenceIds: [] }, { orderId: id }, {})); 
+                          setMessage("Message sent to operations."); 
+                          setIsContacting(false);
+                          setContactReason("");
+                          await refresh();
+                        } catch (e) { 
+                          setMessage((e as Error).message); 
+                        } finally { 
+                          setBusy(false); 
+                        }
+                      }}
+                      className="flex-1 bg-[#146b45] text-white font-semibold text-[13px] h-[40px] rounded-[9px] hover:bg-[#105b3a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {busy ? "Sending..." : "Send message"}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button 
+                  onClick={() => setIsContacting(true)}
+                  className="w-full bg-transparent text-[#146b45] border-transparent font-semibold text-[14px] h-[48px] rounded-[12px] flex items-center justify-center gap-2 hover:bg-[#146b45]/5 transition-colors"
+                >
+                  <HelpCircle size={18} /> Contact operations
                 </button>
               )}
-
-              <button
-                disabled={busy || !reason.trim()}
-                onClick={() => update("store_issue")}
-                className="btn w-full flex items-center justify-center gap-2 border-amber-200 text-amber-700 hover:bg-amber-50 disabled:opacity-50 disabled:hover:bg-transparent"
-              >
-                <MessageSquareWarning size={16} /> Report Business Impact
-              </button>
-
-              <button
-                disabled={busy}
-                onClick={refresh}
-                className="btn w-full border-wp-border text-wp-ink hover:bg-slate-50"
-              >
-                Refresh Status
-              </button>
             </div>
-          </div>
-          
-        </div>
-      </div>
+          )}
+        </>
+      )}
     </div>
   );
 }

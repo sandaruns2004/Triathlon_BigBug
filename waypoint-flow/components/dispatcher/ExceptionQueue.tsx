@@ -15,6 +15,7 @@ interface Exception {
 interface ExceptionQueueProps {
   exceptions: Exception[];
   loading:    boolean;
+  onResolve?: (id: string) => void;
 }
 
 function timeAgo(iso: string): string {
@@ -46,20 +47,40 @@ const SEVERITY_ICON: Record<string, string> = {
   low:      "bg-gray-50 text-gray-600",
 };
 
-export function ExceptionQueue({ exceptions, loading }: ExceptionQueueProps) {
+export function ExceptionQueue({ exceptions, loading, onResolve }: ExceptionQueueProps) {
   const [localResolved, setLocalResolved] = useState<Set<string>>(new Set());
 
   const activeExceptions = exceptions.filter(e => !localResolved.has(e.exceptionId));
   const count = activeExceptions.filter((e) => e.severity === "critical" || e.severity === "high").length;
 
-  const handleResolve = (exceptionId: string) => {
-    // For the hackathon demo, instantly remove it from the UI
+  const handleResolve = async (exceptionId: string) => {
+    // Instantly remove it from the UI for responsive UX (optimistic update)
     setLocalResolved(prev => {
       const next = new Set(prev);
       next.add(exceptionId);
       return next;
     });
-    alert(`Exception ${exceptionId} marked as resolved!`);
+    
+    if (onResolve) onResolve(exceptionId);
+    
+    // Call the backend API to actually resolve it in the database
+    try {
+      const res = await fetch(`/api/dispatcher/exceptions/${exceptionId}/resolve`, {
+        method: "POST"
+      });
+      if (!res.ok) {
+        throw new Error("Failed to resolve on backend");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Failed to resolve exception on the server.");
+      // Rollback optimistic update if it fails
+      setLocalResolved(prev => {
+        const next = new Set(prev);
+        next.delete(exceptionId);
+        return next;
+      });
+    }
   };
 
   return (

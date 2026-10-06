@@ -9,6 +9,11 @@ import { db } from "@/lib/db/firebase";
  * CSVs are read from public/data/ if present.
  * In development: no secret required.
  */
+
+export async function GET(req: NextRequest) {
+  return POST(req);
+}
+
 export async function POST(req: NextRequest) {
   // Removed secret check for hackathon demo simplicity
 
@@ -69,6 +74,7 @@ export async function POST(req: NextRequest) {
     {
       tripId:         "WP-001-T1",
       vehicleId:      "WP-001",
+      driverId:       "user-driver",
       driverName:     "Roshan Jayasinghe",
       brand:          "Fresh",
       district:       "Colombo",
@@ -89,6 +95,7 @@ export async function POST(req: NextRequest) {
     {
       tripId:         "WP-014-T1",
       vehicleId:      "WP-014",
+      driverId:       "user-driver-2",
       driverName:     "Kamal Perera",
       brand:          "Style",
       district:       "Colombo",
@@ -109,6 +116,7 @@ export async function POST(req: NextRequest) {
     {
       tripId:         "WP-022-T1",
       vehicleId:      "WP-022",
+      driverId:       "user-driver-3",
       driverName:     "Nimal Siripala",
       brand:          "Tech",
       district:       "Gampaha",
@@ -123,12 +131,13 @@ export async function POST(req: NextRequest) {
       etaDeparture:   `${today}T09:30:00+05:30`,
       etaReturn:      `${today}T17:00:00+05:30`,
       planDate:       today,
-      lat:            null,
-      lng:            null,
+      lat:            6.945,
+      lng:            79.89,
     },
     {
       tripId:         "WP-031-T1",
       vehicleId:      "WP-031",
+      driverId:       "user-driver-4",
       driverName:     "Asanka Wickramasinghe",
       brand:          "Fresh",
       district:       "Kandy",
@@ -157,11 +166,24 @@ export async function POST(req: NextRequest) {
 
   // ── 5. TRIP STOPS ────────────────────────────────────────────────────
   const demoStops = [
-    { stopId: "STOP-001-1", tripId: "WP-001-T1", outletId: "OUT005", outletName: "Fresh Mart Nugegoda",    stopOrder: 1, status: "delivered",   expectedKg: 850,  deliveredKg: 850,  address: "23 High Level Rd, Nugegoda" },
-    { stopId: "STOP-001-2", tripId: "WP-001-T1", outletId: "OUT027", outletName: "Fresh Mart Kelaniya",    stopOrder: 2, status: "delivered",   expectedKg: 1200, deliveredKg: 1150, address: "48 Kandy Rd, Kelaniya" },
-    { stopId: "STOP-001-3", tripId: "WP-001-T1", outletId: "OUT034", outletName: "Style Hub Negombo",      stopOrder: 3, status: "on_route",    expectedKg: 950,  deliveredKg: null, address: "12 Lewis Pl, Negombo" },
-    { stopId: "STOP-001-4", tripId: "WP-001-T1", outletId: "OUT012", outletName: "Style Hub Bambalapitiya", stopOrder: 4, status: "needs_planning", expectedKg: 800, deliveredKg: null, address: "8 Galle Rd, Colombo 03" },
-    { stopId: "STOP-014-1", tripId: "WP-014-T1", outletId: "OUT005", outletName: "Fresh Mart Nugegoda",    stopOrder: 1, status: "needs_planning", expectedKg: 200, deliveredKg: null, address: "23 High Level Rd, Nugegoda" },
+    { stopId: "STOP-001-1", tripId: "WP-001-T1", outletId: "OUT005", outletName: "Fresh Mart Nugegoda",    stopOrder: 1, status: "delivered",   expectedKg: 850,  deliveredKg: 850,  address: "23 High Level Rd, Nugegoda", orderId: "ORD-STOP-001-1", lines: [{ lineId: "L1", productId: "PROD-1", name: "Fresh Milk 1L", unit: "crates", quantity: 15 }] },
+    { stopId: "STOP-001-2", tripId: "WP-001-T1", outletId: "OUT027", outletName: "Fresh Mart Kelaniya",    stopOrder: 2, status: "delivered",   expectedKg: 1200, deliveredKg: 1150, address: "48 Kandy Rd, Kelaniya", orderId: "ORD-STOP-001-2", lines: [{ lineId: "L1", productId: "PROD-1", name: "Fresh Milk 1L", unit: "crates", quantity: 15 }] },
+    { stopId: "STOP-001-3", tripId: "WP-001-T1", outletId: "OUT034", outletName: "Style Hub Negombo",      stopOrder: 3, status: "on_route",    expectedKg: 950,  deliveredKg: null, address: "12 Lewis Pl, Negombo", orderId: "ORD-STOP-001-3", lines: [{ lineId: "L1", productId: "PROD-1", name: "Fresh Milk 1L", unit: "crates", quantity: 15 }] },
+    { stopId: "STOP-001-4", tripId: "WP-001-T1", outletId: "OUT012", outletName: "Style Hub Bambalapitiya", stopOrder: 4, status: "needs_planning", expectedKg: 800, deliveredKg: null, address: "8 Galle Rd, Colombo 03", orderId: "ORD-STOP-001-4", lines: [{ lineId: "L1", productId: "PROD-1", name: "Fresh Milk 1L", unit: "crates", quantity: 15 }] },
+    
+    // WP-014-T1 (8 stops)
+    { stopId: "STOP-014-1", tripId: "WP-014-T1", outletId: "OUT005", outletName: "Fresh Mart Nugegoda",    stopOrder: 1, status: "needs_planning", expectedKg: 200, deliveredKg: null, address: "23 High Level Rd, Nugegoda", orderId: "ORD-STOP-014-1", lines: [{ lineId: "L1", productId: "PROD-1", name: "Fresh Milk 1L", unit: "crates", quantity: 15 }] },
+    { stopId: "STOP-014-2", tripId: "WP-014-T1", outletId: "OUT012", outletName: "Style Hub Bambalapitiya", stopOrder: 2, status: "needs_planning", expectedKg: 150, deliveredKg: null, address: "8 Galle Rd, Colombo 03", orderId: "ORD-STOP-014-2", lines: [{ lineId: "L1", productId: "PROD-1", name: "Fresh Milk 1L", unit: "crates", quantity: 15 }] },
+    { stopId: "STOP-014-3", tripId: "WP-014-T1", outletId: "OUT027", outletName: "Fresh Mart Kelaniya",    stopOrder: 3, status: "needs_planning", expectedKg: 180, deliveredKg: null, address: "48 Kandy Rd, Kelaniya", orderId: "ORD-STOP-014-3", lines: [{ lineId: "L1", productId: "PROD-1", name: "Fresh Milk 1L", unit: "crates", quantity: 15 }] },
+    { stopId: "STOP-014-4", tripId: "WP-014-T1", outletId: "OUT034", outletName: "Style Hub Negombo",      stopOrder: 4, status: "needs_planning", expectedKg: 120, deliveredKg: null, address: "12 Lewis Pl, Negombo", orderId: "ORD-STOP-014-4", lines: [{ lineId: "L1", productId: "PROD-1", name: "Fresh Milk 1L", unit: "crates", quantity: 15 }] },
+    { stopId: "STOP-014-5", tripId: "WP-014-T1", outletId: "OUT045", outletName: "Fresh Mart Wattala",      stopOrder: 5, status: "needs_planning", expectedKg: 250, deliveredKg: null, address: "90 Negombo Rd, Wattala", orderId: "ORD-STOP-014-5", lines: [{ lineId: "L1", productId: "PROD-1", name: "Fresh Milk 1L", unit: "crates", quantity: 15 }] },
+    { stopId: "STOP-014-6", tripId: "WP-014-T1", outletId: "OUT019", outletName: "Tech World Kandy",       stopOrder: 6, status: "needs_planning", expectedKg: 100, deliveredKg: null, address: "Kandy City Centre", orderId: "ORD-STOP-014-6", lines: [{ lineId: "L1", productId: "PROD-1", name: "Fresh Milk 1L", unit: "crates", quantity: 15 }] },
+    { stopId: "STOP-014-7", tripId: "WP-014-T1", outletId: "OUT005", outletName: "Fresh Mart Nugegoda 2",  stopOrder: 7, status: "needs_planning", expectedKg: 150, deliveredKg: null, address: "23 High Level Rd, Nugegoda", orderId: "ORD-STOP-014-7", lines: [{ lineId: "L1", productId: "PROD-1", name: "Fresh Milk 1L", unit: "crates", quantity: 15 }] },
+    { stopId: "STOP-014-8", tripId: "WP-014-T1", outletId: "OUT012", outletName: "Style Hub Bambalapitiya 2", stopOrder: 8, status: "needs_planning", expectedKg: 250, deliveredKg: null, address: "8 Galle Rd, Colombo 03", orderId: "ORD-STOP-014-8", lines: [{ lineId: "L1", productId: "PROD-1", name: "Fresh Milk 1L", unit: "crates", quantity: 15 }] },
+
+    // WP-022-T1 (2 stops)
+    { stopId: "STOP-022-1", tripId: "WP-022-T1", outletId: "OUT019", outletName: "Tech World Kandy",       stopOrder: 1, status: "needs_planning", expectedKg: 1100, deliveredKg: null, address: "Kandy City Centre", orderId: "ORD-STOP-022-1", lines: [{ lineId: "L1", productId: "PROD-1", name: "Fresh Milk 1L", unit: "crates", quantity: 15 }] },
+    { stopId: "STOP-022-2", tripId: "WP-022-T1", outletId: "OUT045", outletName: "Fresh Mart Wattala",      stopOrder: 2, status: "needs_planning", expectedKg: 1000, deliveredKg: null, address: "90 Negombo Rd, Wattala", orderId: "ORD-STOP-022-2", lines: [{ lineId: "L1", productId: "PROD-1", name: "Fresh Milk 1L", unit: "crates", quantity: 15 }] },
   ];
 
   const sBatch = db.batch();
@@ -236,43 +258,27 @@ export async function POST(req: NextRequest) {
   results.daily_metrics = 1;
 
   // ── 8. ORDERS (deferred + pending) ───────────────────────────────────
-  const demoOrders = [
-    {
-      orderId:          "ORD-2026-001",
-      outletId:         "OUT005",
-      outletName:       "Fresh Mart Nugegoda",
-      brand:            "Fresh",
-      district:         "Colombo",
-      depot:            "Peliyagoda",
-      dockType:         "street",
-      parkingConstraint:"normal",
-      tempRequirement:  "ambient",
-      orderWeightKg:    850,
-      orderVolumeM3:    3.5,
-      status:           "delivered",
-      deferredYesterday:false,
-      daysSinceLastServed: 0,
-      planDate:         today,
-      tripId:           "WP-001-T1",
-    },
-    {
-      orderId:          "ORD-2026-002",
-      outletId:         "OUT027",
-      outletName:       "Fresh Mart Kelaniya",
-      brand:            "Fresh",
-      district:         "Gampaha",
-      depot:            "Peliyagoda",
-      dockType:         "street",
-      parkingConstraint:"van_only",
-      tempRequirement:  "ambient",
-      orderWeightKg:    1200,
-      orderVolumeM3:    5.0,
-      status:           "issue_reported",
-      deferredYesterday:false,
-      daysSinceLastServed: 0,
-      planDate:         today,
-      tripId:           "WP-001-T1",
-    },
+  // Generate an order for every stop to satisfy the manifest linkage check
+  const mappedOrders = demoStops.map(stop => ({
+    orderId:          stop.orderId,
+    outletId:         stop.outletId,
+    outletName:       stop.outletName,
+    brand:            "Fresh",
+    district:         "Colombo",
+    depot:            "Peliyagoda",
+    dockType:         "street",
+    parkingConstraint:"normal",
+    tempRequirement:  "ambient",
+    orderWeightKg:    stop.expectedKg,
+    orderVolumeM3:    3.5,
+    status:           stop.status,
+    deferredYesterday:false,
+    daysSinceLastServed: 0,
+    planDate:         today,
+    tripId:           stop.tripId,
+  }));
+
+  const pendingOrders = [
     {
       orderId:          "ORD-2026-003",
       outletId:         "OUT019",
@@ -346,8 +352,10 @@ export async function POST(req: NextRequest) {
       daysSinceLastServed: 0,
       planDate:         today,
       tripId:           null,
-    },
+    }
   ];
+
+  const demoOrders = [...mappedOrders, ...pendingOrders];
 
   const orderBatch = db.batch();
   for (const order of demoOrders) {

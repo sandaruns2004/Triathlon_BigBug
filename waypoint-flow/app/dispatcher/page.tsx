@@ -59,7 +59,19 @@ export default function DispatcherOverviewPage() {
 
         {/* Right: Exceptions */}
         <div className="min-h-0">
-          <ExceptionQueue exceptions={data?.exceptions ?? []} loading={loading} />
+          <ExceptionQueue 
+            exceptions={data?.exceptions ?? []} 
+            loading={loading} 
+            onResolve={(id) => {
+              setData(prev => prev ? {
+                ...prev,
+                metrics: {
+                  ...prev.metrics,
+                  activeExceptions: Math.max(0, (prev.metrics.activeExceptions || 0) - 1)
+                }
+              } : prev);
+            }}
+          />
         </div>
       </div>
     </div>

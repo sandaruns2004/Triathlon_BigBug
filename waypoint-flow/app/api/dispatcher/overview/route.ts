@@ -55,7 +55,6 @@ export async function GET(req: NextRequest) {
 
   const trips = tripsSnap.docs.map((d) => d.data());
 
-  // Sort exceptions by severity (critical → high → medium → low) then by createdAt desc
   const SEVERITY_ORDER: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
   const exceptions = exceptionsSnap.docs
     .map((d) => d.data())
@@ -64,6 +63,11 @@ export async function GET(req: NextRequest) {
       if (sev !== 0) return sev;
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
+
+  // Dynamically calculate active exceptions rather than relying on stale daily_metrics snapshot
+  if (metrics) {
+    metrics.activeExceptions = exceptions.length;
+  }
 
   return NextResponse.json({ metrics, trips, exceptions });
 }
