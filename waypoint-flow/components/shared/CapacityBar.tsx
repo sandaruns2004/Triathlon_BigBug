@@ -21,7 +21,7 @@ export function CapacityBar({ label, used, total, unit, invertColors = false }: 
       <div className="flex justify-between items-end">
         <span className={cn("text-[11px] font-semibold uppercase tracking-wider", invertColors ? "text-white/70" : "text-wp-muted")}>{label}</span>
         <span className={cn("text-xs font-medium tabular", invertColors ? "text-white" : "text-wp-ink")}>
-          {used.toFixed(0)} <span className="text-wp-muted">/ {total} {unit}</span>
+          {used.toLocaleString(undefined, { maximumFractionDigits: 2 })} <span className="text-wp-muted">/ {total} {unit}</span>
         </span>
       </div>
       <div className="capacity-bar-track">

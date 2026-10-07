@@ -40,5 +40,36 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   const unassignedOrders = ordersSnap.docs.map((d) => d.data());
   const trips = tripsSnap.docs.map((d) => d.data());
 
+  // Fetch stops for the trips to populate the RouteCanvas
+  if (trips.length > 0) {
+    const stopsSnap = await db.collection("trip_stops")
+      .where("tripId", "in", trips.map(t => t.tripId))
+      .get();
+    
+    const stopsByTrip = stopsSnap.docs.reduce((acc, doc) => {
+      const data = doc.data();
+      if (!acc[data.tripId]) acc[data.tripId] = [];
+      // Map properties to match RouteCanvas expectations
+      acc[data.tripId].push({
+        orderId: data.orderId,
+        outletId: data.outletName || data.outletId, // Prefer name if available
+        district: plan?.district || "Colombo", // District isn't directly on stop, fallback to a sensible default or fetch if needed
+        orderWeightKg: data.expectedKg || 0,
+        stopOrder: data.stopOrder
+      });
+      return acc;
+    }, {} as Record<string, any[]>);
+
+    for (const trip of trips) {
+      if (stopsByTrip[trip.tripId]) {
+        trip.orders = stopsByTrip[trip.tripId].sort((a, b) => a.stopOrder - b.stopOrder);
+        // Attempt to get district from trip if possible
+        trip.orders.forEach(o => o.district = trip.district || o.district);
+      } else {
+        trip.orders = [];
+      }
+    }
+  }
+
   return NextResponse.json({ plan, vehicles, unassignedOrders, trips });
 }
