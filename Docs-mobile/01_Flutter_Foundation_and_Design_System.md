@@ -100,3 +100,29 @@ Acceptance checks:
 5. `dart format`, `flutter analyze` and relevant unit/widget tests pass.
 
 **Exit gate:** developers can implement screens against repositories, and durable local data handling works independently of server availability.
+
+## Connection and role review — 9 October 2026
+
+**Status: Implemented — verification pending.** [Executed evidence and limitations](../waypoint-mobile/docs/connection-role-verification.md).
+
+- [x] Implement the relevant connection/role changes: validated mobile API URL, invalidated rejected offline grants, scope-bound drafts/caches/notification cursors and correction access; add connected Chrome durable storage/media adapter.
+- [x] Run 55 Flutter tests, clean analysis and compile the connected debug web build.
+- [x] Verify in-app Chromium Driver/Store sign-in, role-route guards, session restoration and local Store draft reload; the existing shared HTTP test passed under the standard Next.js launcher.
+- [x] Verify matching real website/Firebase configuration and connected browser login; see the later environment and role/UI evidence below.
+- [ ] Verify browser media/quota/offline and external-Chrome acceptance.
+- [x] Repair the recorded backend gate/test discrepancies; 5 service tests and the isolated HTTP journey pass in the later environment evidence.
+- [ ] Retain physical-device, hosted and release acceptance gates.
+### Added environment files — 9 October 2026
+
+Status remains **Implemented — verification pending**. [Executed environment/connection evidence](../waypoint-mobile/docs/env-connection-verification.md).
+
+- [x] Build and serve a separate Chrome output using the registered real Firebase Web client.
+- [ ] Verify the real-account browser/native acceptance gates.
+
+
+### Connected login and UI follow-up — 9 October 2026
+
+Status remains **Implemented — verification pending**. [Actual browser checks and limits](../waypoint-mobile/docs/role-ui-verification.md).
+
+- [x] Verify connected browser session/draft reload and rebuild the real-project Web app; 57 Flutter tests and clean analysis/format pass.
+- [ ] Complete the phase exit gate with the outstanding operational, physical-device and release checks.

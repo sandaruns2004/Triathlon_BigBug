@@ -10,10 +10,13 @@ import { cn } from "@/lib/utils";
 export default function DriverTodayPage() {
   const { data: session } = useSession();
   const userName = (session?.user as any)?.name || "Driver";
-  
+  const depot = (session?.user as any)?.depot || "Assigned depot";
+
   const [trip, setTrip] = useState<any>(null);
   const [stops, setStops] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [completedTrips, setCompletedTrips] = useState(0);
+  const [routeError, setRouteError] = useState("");
   const [message, setMessage] = useState("");
   const [starting, setStarting] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
@@ -21,14 +24,19 @@ export default function DriverTodayPage() {
 
   const fetchTrip = () => {
     fetch("/api/driver/trip")
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error("Route unavailable");
+        return res.json();
+      })
       .then(data => {
         setTrip(data.trip);
         setStops(data.stops || []);
+        setCompletedTrips(data.completedTrips ?? 0);
+        setRouteError("");
         setLoading(false);
       })
-      .catch(e => {
-        console.error(e);
+      .catch(() => {
+        setRouteError("Cannot refresh your route. Check your connection and try again.");
         setLoading(false);
       });
   };
@@ -57,21 +65,21 @@ export default function DriverTodayPage() {
 
   return (
     <div className="flex flex-col min-h-full bg-[#f6f8f7] px-[22px] pt-[10px] pb-[20px]">
-      {message && <p role="status" className="py-2 text-sm text-[#ae483a]">{message}</p>}
-      
+      {(message || routeError) && <p role="status" className="py-2 text-sm text-[#ae483a]">{message || routeError}</p>}
+
       <div className="flex items-center justify-between mb-[7px]">
-        <span className="text-[10px] tracking-[1.6px] uppercase font-[700] text-[#6b7870]">Tuesday, 21 April</span>
+        <span className="text-[10px] tracking-[1.6px] uppercase font-[700] text-[#6b7870]">{new Intl.DateTimeFormat("en-GB", {timeZone:"Asia/Colombo",weekday:"long",day:"numeric",month:"long"}).format(new Date())}</span>
         <Link href="/driver/sync" className="bg-transparent border-none p-0 min-h-[48px] flex items-center justify-center">
           <span className="inline-flex items-center gap-[5px] rounded-[6px] px-[8px] py-[5px] text-[10px] font-[650] bg-[#fcf2df] text-[#92611a] whitespace-nowrap">
-            <RefreshCw size={12} /> 0 queued
+            <RefreshCw size={12} /> Sync Centre
           </span>
         </Link>
       </div>
-      
+
       <div className="mb-[23px]">
         <div className="text-[10px] tracking-[1.6px] uppercase font-[700] text-[#6b7870]">YOUR DAY, AT A GLANCE</div>
         <h1 className="text-[28px] leading-[1.2] tracking-[-1px] font-[650] my-[8px]">Good morning, {userName.split(' ')[0]}</h1>
-        <p className="text-[13px] text-[#6b7870] leading-[1.55]">Peliyagoda depot · Morning shift</p>
+        <p className="text-[13px] text-[#6b7870] leading-[1.55]">{depot} depot · Morning shift</p>
       </div>
 
       {!trip ? (
@@ -79,33 +87,34 @@ export default function DriverTodayPage() {
           <div className="w-[140px] h-[110px] mx-auto mb-4 bg-[#f2f6ef] rounded-[10px] flex items-center justify-center">
              <CheckCircle2 size={48} className="text-[#146b45] opacity-50" />
           </div>
-          <h2 className="text-[19px] tracking-[-0.5px] font-[650]">That's a day well delivered.</h2>
-          <p className="text-[14px] text-[#6b7870] mt-3">All stops recorded. Check your activity for any records waiting to sync.</p>
+          <h2 className="text-[19px] tracking-[-0.5px] font-[650]">{routeError ? "Route unavailable" : completedTrips > 0 ? "That's a day well delivered." : "No assigned route for today"}</h2>
+          <p className="text-[14px] text-[#6b7870] mt-3">{routeError ? "Retry when the sign-in service and connection are available." : completedTrips > 0 ? "Today's assigned trips are complete. Check Sync Centre for records waiting to sync." : "Operations will assign your route. Saved work remains in Sync Centre."}</p>
+          {routeError && <button onClick={fetchTrip} className="mt-4 text-[#146b45] font-semibold">Retry route</button>}
         </div>
       ) : (
         <>
           {/* ── Trip Hero ── */}
           <section className="relative overflow-hidden rounded-[18px] bg-[#146b45] text-white p-[22px] mb-[15px]">
             <div className="pointer-events-none absolute -right-[56px] top-[50px] w-[205px] h-[205px] rounded-full border border-white/10 shadow-[0_0_0_30px_rgba(255,255,255,0.015),0_0_0_60px_rgba(255,255,255,0.01)]" />
-            
+
             <div className="relative z-10">
               <div className="flex justify-between items-center w-full">
                 <span className="text-[#acd0bb] text-[10px] font-bold uppercase tracking-[1.6px]">YOUR CURRENT TRIP</span>
                 <span className="inline-flex items-center gap-[5px] rounded-[6px] px-[8px] py-[5px] text-[10px] font-[650] bg-white/10 text-[#e8f5e9] border border-white/20 whitespace-nowrap">
-                  <CheckCircle2 size={12} /> {["on_route", "returning"].includes(trip.status) ? "On route" : !trip.held ? "Ready to depart" : "Awaiting loading"}
+                  <CheckCircle2 size={12} /> {trip.status === "returning" ? "Returning to depot" : trip.status === "on_route" ? "On route" : trip.startEligible ? "Ready to depart" : "Awaiting operations"}
                 </span>
               </div>
-              
+
               <div className="flex items-center gap-[12px] min-h-[82px] mt-[12px]">
                 <h2 className="flex-1 min-w-0 m-0 text-[27px] leading-[1.2] font-[650] tracking-tight">
-                  {trip.vehicleId} <span className="text-[13px] text-[#b7d6c4] font-[400] tracking-normal">/ Trip 1</span>
+                  {trip.vehicleId} <span className="text-[13px] text-[#b7d6c4] font-[400] tracking-normal">/ Trip {trip.tripNumber ?? 1}</span>
                 </h2>
               </div>
-              
+
               <p className="text-[#c0ddcb] text-[12px] mt-[6px]">
-                Peliyagoda → {trip.district}
+                {trip.depot ?? depot} → {trip.district}
               </p>
-              
+
               <div className="flex my-[23px] gap-[28px]">
                 <div>
                   <strong className="block text-[23px] font-semibold">{trip.stopCount}</strong>
@@ -124,13 +133,13 @@ export default function DriverTodayPage() {
               </div>
 
               {!["on_route", "returning"].includes(trip.status) ? (
-                <button 
+                <button
                   onClick={handleStartRoute}
-                  disabled={trip.held}
+                  disabled={starting || !trip.startEligible}
                   className="w-full bg-white disabled:bg-white/90 disabled:text-[#146b45]/50 text-[#146b45] font-semibold text-[14px] h-[48px] rounded-[9px] flex items-center justify-center gap-[9px] hover:bg-[#f0f6f1] transition-colors"
                 >
                   <Truck size={20} />
-                  {!trip.held ? "Start trip" : "Waiting for loader"}
+                  {starting ? "Starting trip…" : trip.startEligible ? "Start trip" : "Waiting for operations"}
                   <ChevronRight size={18} />
                 </button>
               ) : (
@@ -155,15 +164,15 @@ export default function DriverTodayPage() {
                   {!trip.held ? "Checked, loaded, ready." : "Your loading team is preparing this trip."}
                 </h3>
                 <p className="text-[11px] text-[#6b7870] mb-[5px]">
-                  {!trip.held ? "Manifest verified by Sanath. Vehicle temperature confirmed." : "Departure stays locked until the loader releases your vehicle."}
+                  {trip.released && !trip.held ? "Loader release recorded for this trip." : "Departure stays locked until the loader releases your vehicle."}
                 </p>
-                <button 
+                <button
                   onClick={() => setShowNotes(!showNotes)}
                   className="bg-transparent border-none text-[#146b45] text-[12px] p-0 min-h-[auto] flex items-center font-[650] mt-1 hover:underline focus:outline-none"
                 >
                   {showNotes ? "Hide loading notes" : "View loading notes"} <ChevronRight size={14} className={cn("transition-transform", showNotes && "rotate-90")} />
                 </button>
-                
+
                 {showNotes && (
                   <div className="mt-[12px] p-[12px] bg-white rounded-[8px] border border-[#dce8d7] text-[12px] text-[#17221d]">
                     <strong>Handling instructions:</strong>
@@ -178,11 +187,11 @@ export default function DriverTodayPage() {
             <h2 className="text-[17px] font-[650] tracking-[-0.5px]">All stops</h2>
             <span className="text-[13px] text-[#6b7870]">{trip.stopsCompleted} / {trip.stopCount} done</span>
           </div>
-          
+
           <div className="bg-white border border-[#dce5df] rounded-[14px] p-[22px] mb-[15px]">
             {stops.map((stop, index) => {
               const isCompleted = ["delivered","partial","failed","refused","skipped"].includes(stop.status);
-              
+
               return (
                 <div key={stop.stopId} className="flex gap-[13px] py-[17px] border-b border-[#e7ede5] last:border-0">
                   <div className={`w-[32px] h-[32px] rounded-[10px] flex-shrink-0 grid place-items-center text-[12px] font-[700] mt-0.5
@@ -190,11 +199,11 @@ export default function DriverTodayPage() {
                   `}>
                     {isCompleted ? <CheckCircle2 size={16} /> : `0${stop.stopOrder}`}
                   </div>
-                  
+
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <Link 
+                        <Link
                           href={!isCompleted && ["on_route", "returning"].includes(trip.status) ? `/driver/stop/${stop.stopId}` : "#"}
                           className={cn(
                             "text-[14px] font-[650] block truncate",
@@ -208,7 +217,7 @@ export default function DriverTodayPage() {
                           {isCompleted ? "Delivery recorded" : stop.address || "Address not provided"}
                         </p>
                       </div>
-                      
+
                       {!isCompleted && ["on_route", "returning"].includes(trip.status) && (
                         <Link href={`/driver/stop/${stop.stopId}`} className="shrink-0">
                           <ChevronRight size={20} className="text-[#146b45]" />

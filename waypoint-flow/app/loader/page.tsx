@@ -101,7 +101,7 @@ export default function LoadBoardPage() {
       )}
 
       {selectedTripId && (
-        <TripLoaderPanel tripId={selectedTripId} onUpdate={fetchTrips} />
+        <TripLoaderPanel key={selectedTripId} tripId={selectedTripId} onUpdate={fetchTrips} />
       )}
     </div>
   );
@@ -119,7 +119,7 @@ function CompactTripCard({ trip, badge, badgeClass, selected, onClick }: { trip:
         </h3>
         <Truck size={19} strokeWidth={1.7} className={selected ? "text-[#146b45]" : "text-[#63716a]"} />
       </div>
-      <p className="text-[11px] text-[#63716a] my-[8px]">{trip.stopCount} stops · Depart {(trip as any).estimatedDeparture || "08:30"}</p>
+      <p className="text-[11px] text-[#63716a] my-[8px]">{trip.stopCount} stops · Depart {trip.etaDeparture ? new Date(trip.etaDeparture).toLocaleTimeString("en-GB", {timeZone: "Asia/Colombo", hour: "2-digit", minute: "2-digit"}) : "Not scheduled"}</p>
       <span className={`inline-flex items-center gap-[5px] text-[10px] font-[600] px-[7px] py-[4px] rounded-[4px] whitespace-nowrap mt-[2px] ${badgeClass}`}>
         {badge}
       </span>

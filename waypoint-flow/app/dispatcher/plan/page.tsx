@@ -18,12 +18,16 @@ export default function PlanBuilderPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isAllocating, setIsAllocating] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [error, setError] = useState("");
 
   const fetchData = async () => {
     try {
+      setError("");
       // Find today's plan
       const res = await fetch("/api/plans");
-      const { plans } = await res.json();
+      const response = await res.json();
+      if (!res.ok) throw Error(response.error || "Unable to load plans.");
+      const { plans } = response;
       
       let currentPlanId = plans.length > 0 ? plans[0].planId : null;
       let currentStatus = plans.length > 0 ? plans[0].status : "draft";
@@ -32,6 +36,7 @@ export default function PlanBuilderPage() {
       if (!currentPlanId) {
         const createRes = await fetch("/api/plans", { method: "POST" });
         const data = await createRes.json();
+        if (!createRes.ok) throw Error(data.error || "Unable to create plan.");
         currentPlanId = data.plan.planId;
       }
 
@@ -41,6 +46,7 @@ export default function PlanBuilderPage() {
       // Fetch plan details
       const detailRes = await fetch(`/api/plans/${currentPlanId}`);
       const detail = await detailRes.json();
+      if (!detailRes.ok) throw Error(detail.error || "Unable to load this plan.");
       setOrders(detail.unassignedOrders || []);
       setVehicles(detail.vehicles || []);
       setTrips(detail.trips || []);
@@ -49,7 +55,7 @@ export default function PlanBuilderPage() {
         setSelectedTripId(detail.trips[0].tripId);
       }
     } catch (error) {
-      console.error("Error loading plan:", error);
+      setError((error as Error).message);
     } finally {
       setIsLoading(false);
     }
@@ -62,11 +68,14 @@ export default function PlanBuilderPage() {
   const handleAllocate = async () => {
     if (!planId) return;
     setIsAllocating(true);
+    setError("");
     try {
       const res = await fetch(`/api/plans/${planId}/allocate`, { method: "POST" });
-      if (res.ok) await fetchData(); // Reload to get new trips and orders state
+      const data = await res.json();
+      if (!res.ok) throw Error(data.error || "Unable to allocate orders.");
+      await fetchData();
     } catch (e) {
-      console.error(e);
+      setError((e as Error).message);
     } finally {
       setIsAllocating(false);
     }
@@ -75,11 +84,14 @@ export default function PlanBuilderPage() {
   const handlePublish = async () => {
     if (!planId) return;
     setIsPublishing(true);
+    setError("");
     try {
       const res = await fetch(`/api/plans/${planId}/publish`, { method: "PATCH" });
-      if (res.ok) setStatus("published");
+      const data = await res.json();
+      if (!res.ok) throw Error(data.error || "Unable to publish plan.");
+      setStatus("published");
     } catch (e) {
-      console.error(e);
+      setError((e as Error).message);
     } finally {
       setIsPublishing(false);
     }
@@ -96,6 +108,7 @@ export default function PlanBuilderPage() {
 
   return (
     <div className="h-full flex flex-col">
+      {error && <div role="alert" className="mb-4 p-4 border border-red-200 bg-red-50 rounded text-red-700">{error} <button onClick={fetchData} className="underline">Retry</button></div>}
       <div className="flex-1 grid grid-cols-[300px_1fr_300px] gap-6 min-h-0">
         <div className="min-h-0">
           <UnassignedOrders orders={orders} />

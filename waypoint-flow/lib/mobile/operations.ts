@@ -49,12 +49,38 @@ export async function loadStop(principal: Principal, stopId: string) {
     ensure(stop.active !== false && !stop.shortfallOpen && stop.orderId && Array.isArray(stop.lines) && stop.lines.length > 0, 409, "manifest_unresolved", "Resolve shortfall and provide complete manifest lines before loading.");
     const stops = await tx.get(db.collection("trip_stops").where("tripId", "==", stop.tripId));
     allLoaded = stops.docs.filter(d => d.data().active !== false).every(d => d.id === stopId || (d.data().loadingState === "loaded" && !d.data().shortfallOpen));
+    if (stop.loadingState === "loaded" && !stop.shortfallOpen) return;
+    const shortfallHeld = stops.docs.some(d => d.data().active !== false && d.data().shortfallOpen);
     tx.update(ref, { status: "loaded", loadingState: "loaded", loadedAt: new Date().toISOString(), loadedById: principal.userId });
-    tx.update(tripRef, { status: allLoaded ? "ready_to_depart" : "loading", released: allLoaded, held: false,
-      releaseVersion: (trip!.releaseVersion ?? 0) + (allLoaded && !trip!.released ? 1 : 0) });
-    event(tx, principal, allLoaded ? "trip_released" : "loading_updated", stop.tripId, trip!.depot, null, trip!.driverId ?? null);
+    tx.update(tripRef, { status: "loading", released: false, held: shortfallHeld,
+      holdKind: shortfallHeld ? "shortfall" : null,
+      releaseVersion: trip!.releaseVersion ?? 0 });
+    event(tx, principal, "loading_updated", stop.tripId, trip!.depot, null, trip!.driverId ?? null);
   });
   return { success: true, allLoaded };
+}
+export async function releaseTrip(principal: Principal, tripId: string, input: unknown) {
+  requireRole(principal, "loader");
+  const body = z.object({checks: z.tuple([z.literal(true), z.literal(true), z.literal(true), z.literal(true)])}).strict().parse(input);
+  await db.runTransaction(async tx => {
+    const ref = db.collection("trips").doc(identifier(tripId));
+    const doc = await tx.get(ref);
+    ensure(doc.exists,404,"not_found","Trip not found.");
+    const trip = doc.data()!; requireDepot(principal,trip);
+    ensure(["planned","loading","ready_to_depart"].includes(trip.status),409,"loading_closed","A departed trip cannot be released again.");
+    ensure(!trip.held && !trip.holdKind,409,"operations_hold","Resolve the route hold before release.");
+    const snapshot = await tx.get(db.collection("trip_stops").where("tripId","==",tripId));
+    const stops = snapshot.docs.filter(d => d.data().active !== false);
+    ensure(stops.length > 0 && stops.every(d => {
+      const stop = d.data();
+      return stop.loadingState === "loaded" && !stop.shortfallOpen && stop.orderId && Array.isArray(stop.lines) && stop.lines.length > 0;
+    }),409,"manifest_unresolved","Load every active stop and resolve shortfalls before release.");
+    if (trip.released && trip.status === "ready_to_depart") return;
+    tx.update(ref,{status:"ready_to_depart",released:true,releaseVersion:(trip.releaseVersion??0)+1,
+      departureChecks:body.checks, releasedById:principal.userId,releasedAt:new Date().toISOString()});
+    event(tx,principal,"trip_released",tripId,trip.depot,null,trip.driverId??null);
+  });
+  return {success:true};
 }
 export async function reportShortfall(principal: Principal, input: unknown) {
   requireRole(principal, "loader");
@@ -102,14 +128,13 @@ export async function resolveShortfall(principal: Principal, exceptionId: string
       ensure(Number.isInteger(quantity) && quantity >= 0 && quantity <= line.quantity, 422, "invalid_quantity", "Adjusted quantities cannot exceed approved goods.");
       return { ...line, quantity };
     });
-    const allLoaded = all.docs.filter(doc => doc.data().active !== false).every(doc => doc.id === ex.stopId || (doc.data().loadingState === "loaded" && !doc.data().shortfallOpen));
     const otherShortfall = all.docs.some(doc => doc.id !== ex.stopId && doc.data().shortfallOpen);
     tx.update(stopRef, { lines: approved, stopManifestRevision: (stop.stopManifestRevision ?? 0) + 1, shortfallOpen: false,
       loadingState: "loaded", status: "loaded", resolutionNote: body.reason });
     tx.update(orderRef, { approvedLines: approved, fulfillmentVersion: (order!.fulfillmentVersion ?? 0) + 1, shortfallReason: body.reason });
     tx.update(exRef, { resolved: true, resolvedById: principal.userId, resolution: body.reason, resolvedAt: new Date().toISOString() });
     tx.update(tripRef, { routeRevision: (trip.routeRevision ?? 0) + 1, held: otherShortfall, holdKind: otherShortfall ? "shortfall" : null,
-      status: allLoaded ? "ready_to_depart" : "loading", released: allLoaded, releaseVersion: (trip.releaseVersion ?? 0) + 1 });
+      status: "loading", released: false, releaseVersion: (trip.releaseVersion ?? 0) + 1 });
     event(tx, principal, "shortfall_resolved", stop.orderId, trip.depot, stop.outletId, trip.driverId ?? null);
   });
   return { status: "accepted" };

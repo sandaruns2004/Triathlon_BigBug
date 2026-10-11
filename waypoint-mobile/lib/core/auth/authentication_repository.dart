@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -78,11 +79,21 @@ class FirebaseAuthenticationRepository implements AuthenticationRepository {
     );
   }
 
+  ApiClient createClient() => ApiClient(config, this);
+
   @override
   Future<Principal> revalidate() async {
     final expectedUid = firebase.currentUser?.uid;
-    final client = ApiClient(config, this);
-    final result = await client.dio.get<Map<String, dynamic>>('me');
+    final client = createClient();
+    late Response<Map<String, dynamic>> result;
+    try {
+      result = await client.dio.get<Map<String, dynamic>>('me');
+    } on DioException catch (error) {
+      if ([401, 403].contains(error.response?.statusCode)) {
+        await signOut();
+      }
+      rethrow;
+    }
     final me = Principal.fromJson(result.data!);
     if (expectedUid == null ||
         me.firebaseUid != expectedUid ||
@@ -135,7 +146,7 @@ class FirebaseAuthenticationRepository implements AuthenticationRepository {
     try {
       final publicClient = Dio(
         BaseOptions(
-          baseUrl: config.apiBaseUrl.toString(),
+          baseUrl: config.apiEndpoint,
           connectTimeout: const Duration(seconds: 15),
           receiveTimeout: const Duration(seconds: 20),
         ),
@@ -148,20 +159,58 @@ class FirebaseAuthenticationRepository implements AuthenticationRepository {
         result.data!['customToken'] as String,
       );
       return await revalidate();
-    } catch (_) {
-      _principal = null;
-      await firebase.signOut();
-      throw StateError(
-        'Sign-in could not be verified. Check the connection and credentials, or contact operations.',
-      );
+    } catch (error) {
+      if (kDebugMode) {
+        final category = error is FirebaseAuthException
+            ? error.code
+            : error is DioException
+            ? '${error.type.name}, HTTP ${error.response?.statusCode}'
+            : error.runtimeType.toString();
+        debugPrint('Waypoint sign-in failure: $category');
+      }
+      await signOut();
+      throw StateError(signInFailureMessage(error));
     }
   }
 
   @override
   Future<void> signOut() async {
-    await firebase.signOut();
     _principal = null;
     _offline = false;
+    try {
+      await vault.delete(key: 'waypoint.profile');
+    } finally {
+      await firebase.signOut();
+    }
     // Do not delete user-scoped proof, keys or cached records.
   }
+}
+
+String signInFailureMessage(Object error) {
+  if (error is FirebaseAuthException &&
+      error.code == 'network-request-failed') {
+    return 'Cannot reach Firebase authentication. Check your connection and try again.';
+  }
+  if (error is FirebaseAuthException &&
+      [
+        'custom-token-mismatch',
+        'invalid-api-key',
+        'app-not-authorized',
+        'invalid-custom-token',
+      ].contains(error.code)) {
+    return 'The app Firebase configuration does not match the sign-in service. '
+        'Use the Firebase client settings for the working website backend.';
+  }
+  if (error is DioException) {
+    if (error.response == null) {
+      return 'Cannot reach the sign-in service. Check the API address and connection.';
+    }
+    if (error.response?.statusCode == 404) {
+      return 'The mobile API was not found. Check the website address and /api/mobile/v1/ path.';
+    }
+    if (error.response?.statusCode == 429) {
+      return 'Too many sign-in attempts. Wait 15 minutes before trying again.';
+    }
+  }
+  return 'Sign-in could not be verified. Use your provisioned Driver or Store Manager account, or contact operations.';
 }

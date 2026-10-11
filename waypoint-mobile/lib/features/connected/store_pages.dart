@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
 import '../../app/providers.dart';
 import '../../core/data/operational_repository.dart';
+import '../../core/theme/formatters.dart';
 import '../../core/media/evidence_capture.dart';
 import '../../core/storage/local_database.dart';
 import '../../core/widgets/waypoint_widgets.dart';
@@ -49,7 +50,7 @@ class ConnectedStoreOrdersPage extends ConsumerWidget {
                 ),
               ),
         Text(
-          'Fetched ${read.savedAt.toUtc().toIso8601String()} · status updates, estimated arrival only',
+          'Updated ${businessDate(read.savedAt)} at ${businessTime(read.savedAt)} · estimated arrival only',
         ),
         if (read.fromCache)
           Text(
@@ -207,7 +208,12 @@ class StoreOrderDetailPage extends ConsumerWidget {
           ),
           OutlinedButton(
             onPressed: () => ref.invalidate(
-              remoteReadProvider(('store/orders/$orderId', 'order/$orderId')),
+              remoteReadProvider(
+                scopedReadKey((
+                  'store/orders/$orderId',
+                  'order/$orderId',
+                ), ref.read(sessionProvider)!),
+              ),
             ),
             child: const Text('Refresh status'),
           ),
@@ -268,7 +274,9 @@ class _StoreComposerState extends ConsumerState<StoreComposerPage> {
           widget.correctionId!,
         );
         if (!mounted) return;
-        if (original == null || original['status'] != 'rejected') {
+        if (original == null ||
+            original['status'] != 'rejected' ||
+            !operationScopeMatches(original, p)) {
           throw StateError(
             'Only a rejected request can be corrected. Retry uncertain responses with their original ID in Sync Centre.',
           );

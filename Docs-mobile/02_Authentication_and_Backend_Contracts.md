@@ -1,5 +1,14 @@
 # Phase 2 — Authentication and backend contracts
 
+## Browser sample workflow follow-up — 9 October 2026
+
+Status: **Implemented — verification pending**. [Actual environment, fixes, checks and screenshots](../waypoint-mobile/docs/role-workflow-verification.md). Mobile ran as Flutter web in in-app Chromium; external Chrome launch was blocked. No Android-emulator acceptance result is counted.
+
+- [x] Exercise all four website role logins and mobile Driver/Store logins against isolated shared Auth/API; wrong-role, depot/outlet and revoked-account guards pass HTTP regressions.
+- [ ] Complete hosted authentication and physical/offline identity acceptance.
+
+This evidence extends local connected acceptance; unresolved phase exit gates remain open.
+
 **Execution status (30 September 2026): Implemented — verification pending.** Native SDK identity, shared web/native authentication, scoped v1 APIs, account recovery tooling and isolated tests are implemented. Hosted HTTPS and physical-phone checks, plus operations approval of policy defaults, remain release prerequisites.
 Progress is maintained in [00__Work_List.md](00__Work_List.md) under [the repository rule](../AGENTS.md).
 
@@ -102,3 +111,31 @@ Before starting full Driver/Store API wiring, demonstrate:
 ## Execution evidence and remaining gate
 
 Software/test evidence is recorded in [phase-2-7-verification.md](../waypoint-mobile/docs/phase-2-7-verification.md). The code paths above replace the original proposed helpers. No production deployment, signing credential, physical camera acceptance or human policy approval is claimed. Keep this phase open until its applicable remaining release checks pass.
+
+## Connection and role review — 9 October 2026
+
+**Status: Implemented — verification pending.** [Executed evidence and limitations](../waypoint-mobile/docs/connection-role-verification.md).
+
+- [x] Implement the relevant connection/role changes: validated mobile API URL, invalidated rejected offline grants, scope-bound drafts/caches/notification cursors and correction access; add connected Chrome durable storage/media adapter.
+- [x] Run 55 Flutter tests, clean analysis and compile the connected debug web build.
+- [x] Verify in-app Chromium Driver/Store sign-in, role-route guards, session restoration and local Store draft reload; the existing shared HTTP test passed under the standard Next.js launcher.
+- [x] Verify matching real website/Firebase configuration and connected browser login; see the later environment and role/UI evidence below.
+- [ ] Verify browser media/quota/offline and external-Chrome acceptance.
+- [x] Repair the recorded backend gate/test discrepancies; 5 service tests and the isolated HTTP journey pass in the later environment evidence.
+- [ ] Retain physical-device, hosted and release acceptance gates.
+### Added environment files — 9 October 2026
+
+Status remains **Implemented — verification pending**. [Executed environment/connection evidence](../waypoint-mobile/docs/env-connection-verification.md).
+
+- [x] Match website/mobile Firebase settings; generate public-only Flutter defines and exclude server secrets.
+- [x] Verify normal Google authentication and read-only live profile role/depot/outlet bindings.
+- [x] Verify real Driver/Store browser UI sign-in and restoration.
+- [ ] Verify physical-phone hosted authentication.
+
+
+### Connected login and UI follow-up — 9 October 2026
+
+Status remains **Implemented — verification pending**. [Actual browser checks and limits](../waypoint-mobile/docs/role-ui-verification.md).
+
+- [x] Verify real-account Driver/Store browser login, restore, sign-out and role guards; verify all four PC roles and same-origin redirects. Physical-phone/hosted authentication remains pending.
+- [ ] Complete the phase exit gate with the outstanding operational, physical-device and release checks.

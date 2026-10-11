@@ -1,5 +1,14 @@
 # Phase 7 — Testing, release and handoff
 
+## Browser sample workflow follow-up — 9 October 2026
+
+Status: **In progress**. [Actual environment, fixes, checks and screenshots](../waypoint-mobile/docs/role-workflow-verification.md). Mobile ran as Flutter web in in-app Chromium; external Chrome launch was blocked. No Android-emulator acceptance result is counted.
+
+- [x] Run 58 Flutter tests, clean analysis/format, corrected Web build, TypeScript, 5 isolated service tests and 1 HTTP regression; browser cross-role sample journey recorded.
+- [ ] Automate external Chrome, physical devices, hosted S3 and production release matrix.
+
+This evidence extends local connected acceptance; unresolved phase exit gates remain open.
+
 **Execution status (30 September 2026): In progress.** Automated mobile/domain/HTTP checks, connected Android verification, development artifact, protected release workflow and handoff documents are implemented. Production signing, hosted S3/API, fresh physical-device installation and the remaining failure matrix are required before release completion.
 Progress is maintained in [00__Work_List.md](00__Work_List.md) under [the repository rule](../AGENTS.md).
 
@@ -174,3 +183,29 @@ Push, sockets, continuous GPS and guaranteed background transfer remain deferred
 UI follow-up on 1 October: clean analysis, 50 passing Flutter tests, browser Home/Profile visual checks and a newly built/installed normal debug APK. Connected Android login rendered; native Sync Centre/offline visual acceptance remains pending after emulator instability. See [UI verification and checksum](../waypoint-mobile/docs/ui-polish-verification.md). Phase remains **In progress**; physical, hosted and signed-release gates remain open.
 
 Software/test evidence is recorded in [phase-2-7-verification.md](../waypoint-mobile/docs/phase-2-7-verification.md). The code paths above replace the original proposed helpers. No production deployment, signing credential, physical camera acceptance or human policy approval is claimed. Keep this phase open until its applicable remaining release checks pass.
+
+## Connection and role review — 9 October 2026
+
+**Status: In progress.** [Executed evidence and limitations](../waypoint-mobile/docs/connection-role-verification.md).
+
+- [x] Implement the relevant connection/role changes: validated mobile API URL, invalidated rejected offline grants, scope-bound drafts/caches/notification cursors and correction access; add connected Chrome durable storage/media adapter.
+- [x] Run 55 Flutter tests, clean analysis and compile the connected debug web build.
+- [x] Verify in-app Chromium Driver/Store sign-in, role-route guards, session restoration and local Store draft reload; the existing shared HTTP test passed under the standard Next.js launcher.
+- [x] Verify matching real website/Firebase configuration and connected browser login; see the later environment and role/UI evidence below.
+- [ ] Verify browser media/quota/offline and external-Chrome acceptance.
+- [x] Repair the recorded backend gate/test discrepancies; 5 service tests and the isolated HTTP journey pass in the later environment evidence.
+- [ ] Retain physical-device, hosted and release acceptance gates.
+### Added environment files — 9 October 2026
+
+Status remains **In progress**. [Executed environment/connection evidence](../waypoint-mobile/docs/env-connection-verification.md).
+
+- [x] Pass 2 configuration tests, 5 service tests, 1 HTTP test, TypeScript checking, Flutter analysis and real-project Web build.
+- [ ] Resolve hosted S3 permission prerequisite and finish real-account/device/release acceptance.
+
+
+### Connected login and UI follow-up — 9 October 2026
+
+Status remains **In progress**. [Actual browser checks and limits](../waypoint-mobile/docs/role-ui-verification.md).
+
+- [x] Pass 57 Flutter tests, clean formatting/analysis, real-project Web build, TypeScript and isolated HTTP role/origin/replay/revocation/seed guards. Device, S3 and signed-release gates remain unchecked.
+- [ ] Complete the phase exit gate with the outstanding operational, physical-device and release checks.

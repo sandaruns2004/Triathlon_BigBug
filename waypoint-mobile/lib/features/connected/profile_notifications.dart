@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../app/providers.dart';
 import '../../core/data/operational_repository.dart';
+import '../../core/theme/formatters.dart';
 import '../../core/storage/local_database.dart';
 import '../../core/widgets/waypoint_widgets.dart';
 import '../../domain/models.dart';
@@ -131,7 +132,11 @@ class ConnectedProfilePage extends ConsumerWidget {
           'Access and recovery',
           'Saved work stays protected when you sign out',
         ),
-        Text('Offline access until ${p.offlineExpiresAt?.toLocal()}'),
+        Text(
+          p.offlineExpiresAt == null
+              ? 'Offline access unavailable'
+              : 'Offline access until ${businessDate(p.offlineExpiresAt!)} at ${businessTime(p.offlineExpiresAt!)}',
+        ),
         const Text(
           'Operations provisions roles and handles account recovery. Signing out locks saved work without deleting it.',
         ),

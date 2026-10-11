@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/providers.dart';
+import '../../core/data/operational_repository.dart';
 import '../../core/widgets/waypoint_widgets.dart';
 
 class ConnectedSignInPage extends ConsumerStatefulWidget {
@@ -36,12 +37,9 @@ class _ConnectedSignInPageState extends ConsumerState<ConnectedSignInPage> {
         password.clear();
         ref.read(sessionProvider.notifier).state = principal;
       }
-    } catch (_) {
+    } catch (error) {
       if (mounted) {
-        setState(
-          () => message =
-              'Sign-in could not be verified. Check the connection and credentials, or contact operations.',
-        );
+        setState(() => message = apiMessage(error));
       }
     } finally {
       if (mounted) setState(() => busy = false);

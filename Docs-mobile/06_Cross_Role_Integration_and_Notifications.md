@@ -1,5 +1,15 @@
 # Phase 6 — Cross-role integration and notifications
 
+## Browser sample workflow follow-up — 9 October 2026
+
+Status: **Implemented — verification pending**. [Actual environment, fixes, checks and screenshots](../waypoint-mobile/docs/role-workflow-verification.md). Mobile ran as Flutter web in in-app Chromium; external Chrome launch was blocked. No Android-emulator acceptance result is counted.
+
+- [x] Require explicit Loader release after all four checks; preserve holds and prohibit automatic release after loading/shortfall resolution. HTTP regression verifies validation and retry idempotency.
+- [x] Derive Dispatcher totals from canonical depot data, guard exception dismissal, link required review to Control, and verify Store notification read persistence.
+- [ ] Complete hosted publisher and full allocation/publish/closeout UI rehearsal.
+
+This evidence extends local connected acceptance; unresolved phase exit gates remain open.
+
 **Execution status (30 September 2026): Implemented — verification pending.** Shared web/native services and durable recipient-scoped in-app updates are implemented and tested locally. MVP uses authenticated API refresh; sockets, push and background GPS are deferred. Verify deployed publisher/HTTPS operation and full UI rehearsal.
 Progress is maintained in [00__Work_List.md](00__Work_List.md) under [the repository rule](../AGENTS.md).
 
@@ -115,3 +125,29 @@ Kill the notification publisher after a business transaction commits. On restart
 Software/test evidence is recorded in [phase-2-7-verification.md](../waypoint-mobile/docs/phase-2-7-verification.md). The code paths above replace the original proposed helpers. No production deployment, signing credential, physical camera acceptance or human policy approval is claimed. Keep this phase open until its applicable remaining release checks pass.
 
 On 4 October 2026, five isolated-emulator service tests passed, including audit redaction and cross-role/depot denial checks; TypeScript checking also passed. No hosted API, device UI, Flutter or release test was rerun for this audit change.
+
+## Connection and role review — 9 October 2026
+
+**Status: Implemented — verification pending.** [Executed evidence and limitations](../waypoint-mobile/docs/connection-role-verification.md).
+
+- [x] Implement the relevant connection/role changes: validated mobile API URL, invalidated rejected offline grants, scope-bound drafts/caches/notification cursors and correction access; add connected Chrome durable storage/media adapter.
+- [x] Run 55 Flutter tests, clean analysis and compile the connected debug web build.
+- [x] Verify in-app Chromium Driver/Store sign-in, role-route guards, session restoration and local Store draft reload; the existing shared HTTP test passed under the standard Next.js launcher.
+- [x] Verify matching real website/Firebase configuration and connected browser login; see the later environment and role/UI evidence below.
+- [ ] Verify browser media/quota/offline and external-Chrome acceptance.
+- [x] Repair the recorded backend gate/test discrepancies; 5 service tests and the isolated HTTP journey pass in the later environment evidence.
+- [ ] Retain physical-device, hosted and release acceptance gates.
+### Added environment files — 9 October 2026
+
+Status remains **Implemented — verification pending**. [Executed environment/connection evidence](../waypoint-mobile/docs/env-connection-verification.md).
+
+- [x] Repair custom-server URL handling and pass isolated HTTP web/native role/origin/revocation checks.
+- [ ] Verify hosted cross-role UI and worker acceptance.
+
+
+### Connected login and UI follow-up — 9 October 2026
+
+Status remains **Implemented — verification pending**. [Actual browser checks and limits](../waypoint-mobile/docs/role-ui-verification.md).
+
+- [x] Verify PC four-role and mobile two-role guards. Add a passing widget regression retaining data during same-scope refresh and hiding it on account/outlet change. Full operational/device cross-role acceptance remains pending.
+- [ ] Complete the phase exit gate with the outstanding operational, physical-device and release checks.

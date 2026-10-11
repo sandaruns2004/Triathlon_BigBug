@@ -8,6 +8,10 @@ waypoint-mobile/.jtmp/
 **/ui-debug.log
 **/*.tsbuildinfo
 **/.env.local
+**/.env
+**/.env.*
+!**/.env.example
+/env
 waypoint-mobile/config/staging.json
 waypoint-mobile/config/production.json
 waypoint-mobile/android/key.properties

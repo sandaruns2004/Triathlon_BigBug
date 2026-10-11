@@ -1,4 +1,5 @@
 import 'storage_runtime_preview.dart'
+    if (dart.library.js_interop) 'storage_runtime_web.dart'
     if (dart.library.io) 'storage_runtime_native.dart'
     as platform;
 import 'local_store.dart';

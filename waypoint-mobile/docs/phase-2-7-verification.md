@@ -1,5 +1,9 @@
 # Phases 2–7 implementation and verification
 
+## Latest connected browser sample acceptance — 9 October 2026
+
+[Full environment, commands/results, fixes, screenshots and remaining gates](role-workflow-verification.md): 58 Flutter tests, clean analysis/format, Web build, TypeScript, 5 service tests and 1 HTTP test passed. Actual isolated UI transactions include Loader/Dispatcher shortfall handling, departure checks, Driver route start and full photo/POD acceptance, Store discrepancy receipt/digital note, notifications and one-case mobile order creation. Order-envelope decoding now works online and from encrypted offline cache. Phases 2–6 remain **Implemented — verification pending**; Phase 7 **In progress**. External Chrome, hosted S3, physical and release gates remain open.
+
 Recorded 30 September 2026. These are executed local results, not a hosted deployment or physical-phone release certificate.
 
 ## Audit-log role review — 4 October 2026
@@ -113,3 +117,17 @@ Re-executed automated checks on 1 October 2026 at 01:42 IST (2026-09-30T20:12 UT
 | `flutter test --flavor development` | PASS, 35 tests | All storage, sync, network, widget-shell and formatter tests pass |
 
 No integration test, physical device, hosted API or signing run was performed in this re-run. Remaining acceptance gates from the release checklist are unchanged.
+
+
+## 9 October connection and Chrome follow-up
+
+See [executed commands/results and pending gates](connection-role-verification.md): 55 Flutter tests, clean analysis, compiled debug web build, and existing backend test discrepancies. Actual operational website/Firebase settings and browser UI acceptance remain pending. Phase statuses and 0/10 complete count remain unchanged.
+
+## Added environment follow-up — 9 October 2026
+
+[Executed real-project configuration, backend regression and build checks](env-connection-verification.md). All applicable phase gates retain their existing incomplete status; live S3 upload is denied and real-account/device/release acceptance remains pending.
+
+
+## Connected role/UI follow-up — 9 October 2026
+
+[Executed real-account browser checks, fixes, 57-test result and remaining gates](role-ui-verification.md). This supersedes earlier pending real-account browser checks; S3, physical-device, hosted and release acceptance remain open.

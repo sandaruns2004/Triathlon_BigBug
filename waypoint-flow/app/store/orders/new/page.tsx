@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { api, envelope, submit, BrowserApiError } from "@/lib/mobile/browser";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Minus, Plus, Search, Snowflake } from "lucide-react";
@@ -8,6 +9,12 @@ import { cn } from "@/lib/utils";
 
 export default function NewOrderPage() {
   const router = useRouter(), request = useRef<any>();
+  const {data: session} = useSession();
+  const user = session?.user as {id?: string; role?: string; outletId?: string; authVersion?: number} | undefined;
+  const draftKey = user?.role === "store_manager" && user.id && user.outletId
+    ? "waypoint.store.cart.v1:" + JSON.stringify([process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID, user.id, user.outletId, user.authVersion ?? 0]) : "";
+  const [loadedDraftKey, setLoadedDraftKey] = useState("");
+  const [draftWritable, setDraftWritable] = useState(true);
   const [catalogue, setCatalogue] = useState<any>();
   const [cart, setCart] = useState<Record<string, number>>({});
   const [date, setDate] = useState("");
@@ -23,6 +30,47 @@ export default function NewOrderPage() {
     }).catch(e => setMessage(e.message)); 
   }, []);
 
+  useEffect(() => {
+    if (!draftKey || !catalogue) return;
+    request.current = undefined;
+    setCanCorrect(false);
+    setCart({});
+    setDraftWritable(true);
+    try {
+      const raw = localStorage.getItem(draftKey);
+      if (raw) {
+        const draft = JSON.parse(raw);
+        if (draft.schemaVersion !== 1 || draft.scope !== draftKey) throw Error("Draft scope changed");
+        const restored: Record<string, number> = {};
+        for (const product of catalogue.products) {
+          const quantity = draft.cart?.[product.productId];
+          if (Number.isInteger(quantity) && quantity > 0 && quantity <= (product.maxQuantity ?? 1000)) restored[product.productId] = quantity;
+        }
+        setCart(restored);
+        if (catalogue.serviceOptions.serviceDates.includes(draft.date)) setDate(draft.date);
+        else { setDate(catalogue.serviceOptions.serviceDates[0] ?? ""); setMessage("The saved delivery date expired. Review the available date before submitting."); }
+        if (draft.operation?.type === "store_order_created" && typeof draft.operation.operationId === "string") {
+          request.current = draft.operation;
+          setCanCorrect(draft.rejected === true);
+          setMessage("An earlier submission is retained. Retry uses the original request ID; review a rejected request before correcting it.");
+        }
+      }
+    } catch {
+      setDraftWritable(false);
+      setMessage("The saved draft could not be opened. It is retained; draft autosave is paused.");
+    }
+    setLoadedDraftKey(draftKey);
+  }, [draftKey, catalogue]);
+
+  function persistDraft(rejected = canCorrect) {
+    if (!draftKey || loadedDraftKey !== draftKey) throw Error("Wait for your outlet workspace to load.");
+    localStorage.setItem(draftKey, JSON.stringify({schemaVersion:1, scope:draftKey, cart, date, operation:request.current, rejected}));
+  }
+  useEffect(() => {
+    if (!draftKey || loadedDraftKey !== draftKey || !draftWritable) return;
+    try { persistDraft(); } catch { setDraftWritable(false); setMessage("Draft autosave is unavailable. Keep this page open and retry saving before submitting."); }
+  }, [cart, date, draftKey, loadedDraftKey, draftWritable, canCorrect]);
+
   async function save() {
     if (busy) return; 
     setBusy(true); 
@@ -34,10 +82,14 @@ export default function NewOrderPage() {
         note: "", 
         lines: catalogue.products.filter((p: any) => cart[p.productId] > 0).map((p: any) => ({ productId: p.productId, quantity: cart[p.productId], unit: p.unit }))
       });
+      persistDraft(false); // Preserve the UUID before any potentially uncertain network response.
       const receipt = await submit(request.current); 
+      try { localStorage.removeItem(draftKey); } catch { /* A retained retry still uses this accepted UUID. */ }
       router.push("/store/orders/" + receipt.orderId);
     } catch (e) { 
-      setCanCorrect(e instanceof BrowserApiError && e.httpStatus === 422); 
+      const rejected = e instanceof BrowserApiError && (e.httpStatus === 422 || (e.httpStatus === 409 && e.code === "catalogue_changed"));
+      setCanCorrect(rejected);
+      try { persistDraft(rejected); } catch { /* Keep the current request in memory. */ }
       setMessage((e as Error).message); 
     } finally { 
       setBusy(false); 
@@ -53,6 +105,7 @@ export default function NewOrderPage() {
   };
 
   const totalItems = Object.values(cart).reduce((n, q) => n + q, 0);
+  if (!catalogue || !draftKey || loadedDraftKey !== draftKey) return <div className="p-8 text-center">{message || "Loading your outlet catalogue…"}</div>;
 
   return (
     <div className="flex flex-col h-full bg-[#f6f8f7] px-[22px] pt-[10px]">
@@ -81,18 +134,12 @@ export default function NewOrderPage() {
         </select>
       </label>
       
-      <label className="block text-[13px] font-[650] my-[18px]">
-        Delivery window
-        <select disabled={busy || !!request.current} className="block w-full mt-[8px] min-h-[48px] p-[12px] border border-[#cedbd1] rounded-[9px] bg-white text-[#17221d] font-[400] text-[16px]">
-          <option>06:00–08:00 AM</option>
-          <option>08:00–10:00 AM</option>
-        </select>
-      </label>
+      <p className="block text-[13px] font-[650] my-[18px]">Receiving window: {catalogue.serviceOptions.window} · {catalogue.serviceOptions.timeZone}</p>
 
       <div className="relative my-[15px]">
         <Search className="absolute left-[14px] top-[14px] text-[#8a968c]" size={20} />
         <input 
-          placeholder="Search the Fresh catalogue" 
+          placeholder="Search your outlet catalogue"
           aria-label="Search catalogue" 
           value={search} 
           onChange={e => setSearch(e.target.value)} 
@@ -108,7 +155,7 @@ export default function NewOrderPage() {
             
             <div className="flex items-center justify-between mt-[15px]">
               <span className="inline-flex items-center gap-[5px] rounded-[6px] px-[8px] py-[5px] text-[10px] font-[650] bg-[#eaf6ef] text-[#146b45] whitespace-nowrap">
-                <Snowflake size={12} /> Chilled · 2–4°C
+                {["reefer", "chilled", "frozen"].includes(p.temperature) && <Snowflake size={12} />} Handling: {p.temperature ?? "See approved handling"}
               </span>
               
               <div className="flex items-center gap-[2px]">
@@ -125,7 +172,8 @@ export default function NewOrderPage() {
                   max={p.maxQuantity ?? 1000} 
                   disabled={busy || !!request.current}
                   value={cart[p.productId] ?? 0}
-                  onChange={e => setCart({ ...cart, [p.productId]: Number(e.target.value) })} 
+                  aria-label={`Quantity for ${p.name}`}
+                  onChange={e => setCart({ ...cart, [p.productId]: Math.max(0, Math.min(p.maxQuantity ?? 1000, Math.floor(Number(e.target.value) || 0))) })}
                   className="w-[50px] h-[48px] text-center border border-[#dce5df] rounded-[8px] font-semibold text-[16px]" 
                 />
                 <button 
@@ -151,11 +199,11 @@ export default function NewOrderPage() {
 
       <div className="grid gap-[10px] mt-[10px] mb-[20px]">
         <button 
-          disabled={busy || !catalogue || !date || totalItems === 0} 
+          disabled={busy || !catalogue || (!request.current && (!date || totalItems === 0))}
           onClick={save}
           className="w-full bg-[#146b45] disabled:bg-[#146b45]/50 text-white font-semibold text-[14px] h-[48px] rounded-[12px] flex items-center justify-center gap-[9px] hover:bg-[#105b3a] transition-colors"
         >
-          Review order <ArrowRight size={18} />
+          {busy ? "Submitting…" : request.current ? "Retry original request" : "Submit order request"} <ArrowRight size={18} />
         </button>
         {canCorrect && (
           <button 
@@ -167,7 +215,7 @@ export default function NewOrderPage() {
           </button>
         )}
         {!canCorrect && (
-          <button className="w-full bg-transparent text-[#17221d] border-transparent font-semibold text-[14px] h-[48px] rounded-[12px] flex items-center justify-center gap-[9px] hover:bg-black/5 transition-colors">
+          <button disabled={busy} onClick={() => { try { persistDraft(); setDraftWritable(true); setMessage("Draft saved on this browser for your account and outlet."); } catch { setMessage("Cannot save the draft. Keep this page open and check browser storage."); } }} className="w-full bg-transparent text-[#17221d] border-transparent font-semibold text-[14px] h-[48px] rounded-[12px] flex items-center justify-center gap-[9px] hover:bg-black/5 transition-colors">
             Save draft for later
           </button>
         )}

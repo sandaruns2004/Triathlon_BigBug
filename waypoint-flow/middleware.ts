@@ -24,6 +24,9 @@ const ROLE_ROUTES: Record<string, string> = {
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  // Next normalizes loopback request URLs to localhost. Keep redirects on the
+  // configured browser origin so the user's session cookie is not lost.
+  const publicOrigin = new URL(process.env.NEXTAUTH_URL || request.url).origin;
 
   // Allow public routes
   if (pathname.startsWith("/login") || pathname.startsWith("/api/auth")) {
@@ -34,17 +37,17 @@ export async function middleware(request: NextRequest) {
 
   // Not authenticated → redirect to login
   if (!token) {
-    return NextResponse.redirect(new URL("/login", request.nextUrl.origin));
+    return NextResponse.redirect(new URL("/login", publicOrigin));
   }
 
   const role = token.role as string;
   const allowed = ROLE_ROUTES[role];
 
-  if (!allowed) return NextResponse.redirect(new URL("/login", request.nextUrl.origin));
+  if (!allowed) return NextResponse.redirect(new URL("/login", publicOrigin));
 
   // Role trying to access a route it doesn't own → redirect to its home
   if (allowed && !pathname.startsWith(allowed) && !pathname.startsWith("/api")) {
-    return NextResponse.redirect(new URL(allowed, request.nextUrl.origin));
+    return NextResponse.redirect(new URL(allowed, publicOrigin));
   }
 
   return NextResponse.next();

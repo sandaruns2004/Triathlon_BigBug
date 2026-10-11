@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import Link from "next/link";
 import { TriangleAlert, MapPin, PackageX, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -47,41 +47,9 @@ const SEVERITY_ICON: Record<string, string> = {
   low:      "bg-gray-50 text-gray-600",
 };
 
-export function ExceptionQueue({ exceptions, loading, onResolve }: ExceptionQueueProps) {
-  const [localResolved, setLocalResolved] = useState<Set<string>>(new Set());
-
-  const activeExceptions = exceptions.filter(e => !localResolved.has(e.exceptionId));
+export function ExceptionQueue({ exceptions, loading }: ExceptionQueueProps) {
+  const activeExceptions = exceptions;
   const count = activeExceptions.filter((e) => e.severity === "critical" || e.severity === "high").length;
-
-  const handleResolve = async (exceptionId: string) => {
-    // Instantly remove it from the UI for responsive UX (optimistic update)
-    setLocalResolved(prev => {
-      const next = new Set(prev);
-      next.add(exceptionId);
-      return next;
-    });
-    
-    if (onResolve) onResolve(exceptionId);
-    
-    // Call the backend API to actually resolve it in the database
-    try {
-      const res = await fetch(`/api/dispatcher/exceptions/${exceptionId}/resolve`, {
-        method: "POST"
-      });
-      if (!res.ok) {
-        throw new Error("Failed to resolve on backend");
-      }
-    } catch (e) {
-      console.error(e);
-      alert("Failed to resolve exception on the server.");
-      // Rollback optimistic update if it fails
-      setLocalResolved(prev => {
-        const next = new Set(prev);
-        next.delete(exceptionId);
-        return next;
-      });
-    }
-  };
 
   return (
     <div className="card-panel h-full flex flex-col">
@@ -126,12 +94,12 @@ export function ExceptionQueue({ exceptions, loading, onResolve }: ExceptionQueu
                     <span className="text-xs text-wp-muted whitespace-nowrap ml-2">{timeAgo(ex.createdAt)}</span>
                   </div>
                   <p className="text-sm text-wp-muted mt-1 leading-snug">{ex.detail}</p>
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); handleResolve(ex.exceptionId); }}
+                  <Link
+                    href="/dispatcher/operations"
                     className="mt-3 text-xs font-semibold text-wp-action hover:text-wp-green"
                   >
                     Review &amp; Resolve →
-                  </button>
+                  </Link>
                 </div>
               </div>
             </div>

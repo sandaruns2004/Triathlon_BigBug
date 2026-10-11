@@ -1,21 +1,29 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db/firebase";
+import { timingSafeEqual } from "node:crypto";
+import { webRoute } from "@/lib/mobile/web";
+import { ensure, requireRole } from "@/lib/mobile/domain";
 
 /**
  * POST /api/seed
  * Seeds Firestore with ALL demo data:
  *   users, vehicles, outlets, trips, trip_stops, exceptions, daily_metrics
  * CSVs are read from public/data/ if present.
- * In development: no secret required.
+ * Dispatcher session, same-origin POST and server seed secret required.
  */
 
-export async function GET(req: NextRequest) {
-  return POST(req);
+export async function GET() {
+  return NextResponse.json({ error: "Use an authorized POST.", code: "method_not_allowed" }, { status: 405, headers: { Allow: "POST" } });
 }
 
-export async function POST(req: NextRequest) {
-  // Removed secret check for hackathon demo simplicity
+export const POST = webRoute(async (req, _params, principal) => {
+  requireRole(principal, "dispatcher");
+  const expected = process.env.SEED_SECRET;
+  ensure(expected && expected.length >= 16, 503, "seed_unavailable", "Configure the server seed secret first.");
+  const supplied = req.headers.get("x-seed-secret") ?? "";
+  const actual = Buffer.from(supplied), secret = Buffer.from(expected!);
+  ensure(actual.length === secret.length && timingSafeEqual(actual, secret), 403, "seed_forbidden", "Seed authorization is required.");
 
 
   const results: Record<string, number> = {};
@@ -405,5 +413,5 @@ export async function POST(req: NextRequest) {
   await pBatch.commit();
   results.products = demoProducts.length;
 
-  return NextResponse.json({ success: true, seeded: results });
-}
+  return { success: true, seeded: results };
+});

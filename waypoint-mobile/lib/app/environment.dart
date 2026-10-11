@@ -20,11 +20,13 @@ class AppConfig {
 
   factory AppConfig.fromDefines() {
     const name = String.fromEnvironment('APP_ENV', defaultValue: 'development');
+    const mode = String.fromEnvironment('APP_MODE', defaultValue: 'fixture');
+    if (!['fixture', 'connected'].contains(mode)) {
+      throw StateError('APP_MODE must be fixture or connected.');
+    }
     return AppConfig(
       environment: AppEnvironment.values.byName(name),
-      fixtureMode:
-          const String.fromEnvironment('APP_MODE', defaultValue: 'fixture') ==
-          'fixture',
+      fixtureMode: mode == 'fixture',
       apiBaseUrl: Uri.parse(
         const String.fromEnvironment(
           'API_BASE_URL',
@@ -68,6 +70,10 @@ class AppConfig {
       authEmulatorHost;
   final int authEmulatorPort;
 
+  String get apiEndpoint => apiBaseUrl.toString().endsWith('/')
+      ? apiBaseUrl.toString()
+      : '${apiBaseUrl.toString()}/';
+
   void validate({
     required bool releaseBuild,
     TargetPlatform? targetPlatform,
@@ -75,6 +81,18 @@ class AppConfig {
   }) {
     if (buildFlavor != null && buildFlavor != environment.name) {
       throw StateError('Native flavor and APP_ENV must match.');
+    }
+    if (!fixtureMode &&
+        (!RegExp(r'/api/mobile/v1/?$').hasMatch(apiBaseUrl.path) ||
+            apiBaseUrl.hasQuery ||
+            apiBaseUrl.hasFragment ||
+            apiBaseUrl.userInfo.isNotEmpty)) {
+      throw StateError('API_BASE_URL must end in /api/mobile/v1/.');
+    }
+    if (!fixtureMode &&
+        firebaseProjectId.startsWith('demo-') &&
+        authEmulatorHost.isEmpty) {
+      throw StateError('A demo Firebase project requires the Auth emulator.');
     }
     if (!fixtureMode && targetPlatform == TargetPlatform.iOS) {
       final suffix = switch (environment) {

@@ -10,14 +10,25 @@ import '../../domain/models.dart';
 import '../foundation/foundation_pages.dart';
 
 typedef ReadKey = (String, String);
-final remoteReadProvider = FutureProvider.family<CachedRead, ReadKey>((
-  ref,
-  key,
-) {
-  ref.watch(dataRevisionProvider);
-  final principal = ref.watch(sessionProvider)!;
-  return ref.watch(operationalProvider).read(key.$1, key.$2, principal);
-});
+typedef ReadScope = (String, MobileRole, String?, String?, int, String?);
+typedef ScopedReadKey = (ReadKey, ReadScope);
+ReadScope readScope(Principal p) =>
+    (p.userId, p.role, p.depot, p.outletId, p.authVersion, p.firebaseUid);
+ScopedReadKey scopedReadKey(ReadKey query, Principal p) =>
+    (query, readScope(p));
+final remoteReadProvider = FutureProvider.autoDispose
+    .family<CachedRead, ScopedReadKey>((ref, key) {
+      ref.watch(dataRevisionProvider);
+      final principal = ref.watch(sessionProvider)!;
+      if (readScope(principal) != key.$2) {
+        throw StateError(
+          'Sign in as the original account to view this workspace.',
+        );
+      }
+      return ref
+          .watch(operationalProvider)
+          .read(key.$1.$1, key.$1.$2, principal);
+    });
 final operationsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) {
   ref.watch(dataRevisionProvider);
   return ref.watch(operationalProvider).operations(ref.watch(sessionProvider)!);
@@ -100,20 +111,26 @@ class RemoteContent extends ConsumerWidget {
   final ReadKey query;
   final Widget Function(CachedRead) builder;
   @override
-  Widget build(BuildContext context, WidgetRef ref) => ref
-      .watch(remoteReadProvider(query))
-      .when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => PageBody(
-          children: [
-            ErrorState(
-              message: apiMessage(error),
-              onRetry: () => ref.invalidate(remoteReadProvider(query)),
-            ),
-          ],
-        ),
-        data: builder,
-      );
+  Widget build(BuildContext context, WidgetRef ref) {
+    final principal = ref.watch(sessionProvider);
+    if (principal == null) return const SizedBox.shrink();
+    final key = scopedReadKey(query, principal);
+    return ref
+        .watch(remoteReadProvider(key))
+        .when(
+          skipLoadingOnReload: true,
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, _) => PageBody(
+            children: [
+              ErrorState(
+                message: apiMessage(error),
+                onRetry: () => ref.invalidate(remoteReadProvider(key)),
+              ),
+            ],
+          ),
+          data: builder,
+        );
+  }
 }
 
 class ConnectedTodayPage extends ConsumerStatefulWidget {

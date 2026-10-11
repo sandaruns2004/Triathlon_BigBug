@@ -6,7 +6,7 @@ import { seedMobileTestData } from "../scripts/seed-mobile-test";
 import { currentPrincipal, nativeLogin, principalFromBearer } from "../lib/auth/credentials";
 import { driverTrips, tripSnapshot, applyOperation, orderDetail, deliveryNote, publishPendingEvents, notifications,
   reviewConflict, conflictDetail, storeCatalogue } from "../lib/mobile/service";
-import { loadStop, reportShortfall, resolveShortfall, deferOrder, assignTrip, restoreOrder, approveReview } from "../lib/mobile/operations";
+import { loadStop, releaseTrip, reportShortfall, resolveShortfall, deferOrder, assignTrip, restoreOrder, approveReview } from "../lib/mobile/operations";
 import { uploadSession, putLocalMedia, finalizeMedia, viewMedia } from "../lib/mobile/media";
 import { validateProof, businessDate, operationKey, type Operation } from "../lib/mobile/domain";
 import { ApiError } from "../lib/mobile/errors";
@@ -47,11 +47,15 @@ test("isolated cross-role journey, replay, scoped revisions and authorization", 
 
   await loadStop(loader, "TEST-STOP-1");
   const shortfall = await reportShortfall(loader, { tripId: "TEST-TRIP-1", stopId: "TEST-STOP-2", detail: "Two damaged milk cases" });
+  await loadStop(loader, "TEST-STOP-1");
+  assert.equal((await tripSnapshot(driver, "TEST-TRIP-1")).held, true, "Loading another stop must retain the shortfall hold.");
   let trip = await tripSnapshot(driver, "TEST-TRIP-1");
   const blockedStart = op("trip_start", { tripId: trip.tripId, concurrency: { assignmentVersion: trip.assignmentVersion, releaseVersion: trip.releaseVersion }, payload: { parkedAcknowledged: true } });
   await assert.rejects(applyOperation(driver, blockedStart), failure(409));
   const shortStop = trip.stops.find(s => s.stopId === "TEST-STOP-2")!;
   await resolveShortfall(dispatcher, shortfall.exceptionId, { reason: "Approved partial load", quantities: Object.fromEntries(shortStop.lines.map((l: any) => [l.lineId, l.quantity - (l.productId === "MILK-CASE" ? 2 : 0)])) });
+  assert.equal((await tripSnapshot(driver, "TEST-TRIP-1")).released,false,"Loading/approval alone does not certify pre-departure checks.");
+  await releaseTrip(loader,"TEST-TRIP-1",{checks:[true,true,true,true]});
   trip = await tripSnapshot(driver, "TEST-TRIP-1");
   assert.equal(trip.released, true);
   const start = op("trip_start", { tripId: trip.tripId, concurrency: { assignmentVersion: trip.assignmentVersion, releaseVersion: trip.releaseVersion }, payload: { parkedAcknowledged: true } });
@@ -195,6 +199,7 @@ test("canonical Store creation, audited historical amendment and deferral restor
   assert.deepEqual((await viewMedia(store,evidenceId)).bytes,png);
   await assert.rejects(viewMedia(otherStore,evidenceId),failure(403));
   await assert.rejects(applyOperation(store,op("store_issue",{orderId:created.orderId,payload:{category:"damaged",reason:"Damaged crate",lineIds:[],evidenceIds:[]}})),failure(422));
+  await deferOrder(dispatcher,"TEST-DEFERRED",{reason:"Demand exceeds capacity"});
   await restoreOrder(dispatcher,"TEST-DEFERRED",{reason:"Capacity available on revised date",serviceDate:catalogue.serviceOptions.serviceDates[0]});
   const restored=await orderDetail(store,"TEST-DEFERRED");
   assert.equal(restored.status,"pending");assert.equal(restored.history.at(-1).type,"restored_to_planning");

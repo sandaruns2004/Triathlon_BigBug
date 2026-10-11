@@ -4,6 +4,8 @@ const nextConfig = {
     ? (/^\.next-mobile-[a-z-]+$/.test(process.env.MOBILE_TEST_DIST_DIR ?? "") ? process.env.MOBILE_TEST_DIST_DIR : ".next-mobile-test")
     : ".next",
   reactStrictMode: false,
+  // Preserve the configured loopback origin in role redirects and its cookies.
+  skipMiddlewareUrlNormalize: true,
 
   // Prevent Next.js from bundling these server-only native/ESM modules.
   // Required for firebase-admin and bcryptjs to work in Vercel serverless functions.

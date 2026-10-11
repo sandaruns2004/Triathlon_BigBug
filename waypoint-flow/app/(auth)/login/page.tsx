@@ -25,25 +25,35 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
-    const result = await signIn("credentials", {
-      email: email.trim().toLowerCase(),
-      password,
-      redirect: false,
-    });
+    try {
+      const result = await signIn("credentials", {
+        email: email.trim().toLowerCase(),
+        password,
+        redirect: false,
+      });
 
-    setLoading(false);
+      if (!result?.ok || result.error) {
+        // Generic error — never reveal if the email exists
+        setError("Invalid email or password. Please try again.");
+        return;
+      }
 
-    if (result?.error) {
-      // Generic error — never reveal if the email exists
-      setError("Invalid email or password. Please try again.");
-      return;
+      // Fetch session to get role, then redirect
+      const res     = await fetch("/api/auth/session");
+      if (!res.ok) throw new Error("Session unavailable");
+      const session = await res.json();
+      const role    = session?.user?.role;
+      const destination = ROLE_REDIRECT[role];
+      if (!destination) {
+        setError("Your account workspace is unavailable. Contact your depot manager.");
+        return;
+      }
+      router.push(destination);
+    } catch {
+      setError("Cannot reach the sign-in service. Check your connection and try again.");
+    } finally {
+      setLoading(false);
     }
-
-    // Fetch session to get role, then redirect
-    const res     = await fetch("/api/auth/session");
-    const session = await res.json();
-    const role    = session?.user?.role;
-    router.push(ROLE_REDIRECT[role] ?? "/");
   }
 
   return (

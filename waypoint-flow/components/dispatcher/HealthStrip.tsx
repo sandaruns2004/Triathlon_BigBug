@@ -30,7 +30,7 @@ export function HealthStrip({ metrics, loading }: HealthStripProps) {
     { id: "orders",     label: "Orders to plan",     value: m.ordersToPlan,   total: undefined,      icon: <Package size={18} />,      colorClass: "text-wp-ink" },
     { id: "trips",      label: "Trips planned",       value: m.tripsPlanned,   total: m.tripsTotal,   icon: <Route size={18} />,        colorClass: "text-wp-green" },
     { id: "fleet",      label: "Fleet active",        value: m.fleetActive,    total: m.fleetTotal,   icon: <Truck size={18} />,        colorClass: "text-wp-action" },
-    { id: "staff",      label: "Drivers clocked in",  value: m.driversIn,      total: m.driversTotal, icon: <Users size={18} />,        colorClass: "text-wp-ink" },
+    { id: "staff",      label: "Drivers assigned",   value: m.driversIn,      total: m.driversTotal, icon: <Users size={18} />,        colorClass: "text-wp-ink" },
     { id: "exceptions", label: "Active exceptions",   value: m.activeExceptions, total: undefined,    icon: <TriangleAlert size={18} />, colorClass: "text-amber-600", active: m.activeExceptions > 0 },
   ];
 

@@ -1,6 +1,16 @@
 # Mobile phase work list
 
-Last updated: **4 October 2026**. Flutter/Dart, Android first. Driver/Store native; Dispatcher/Loader web. [Executed evidence](../waypoint-mobile/docs/phase-2-7-verification.md), [review/fixes](../waypoint-mobile/docs/mobile-review-and-fixes.md) and [updated development APK](../waypoint-mobile/build/releases/waypoint-0.1.0-development-20261001.apk).
+## Latest browser sample workflow — 9 October 2026
+
+- [x] Test website Dispatcher, Loader, Driver and Store with isolated accounts; mobile Driver/Store use the Flutter browser build requested by the user.
+- [x] Exercise shortfall report/approval, explicit departure checks, route start, retained photo/POD acceptance, discrepancy receipt, digital note, notification read state and one-case order submission.
+- [x] Fix mobile order-envelope crash, automatic premature release, shortfall hold retention, Dispatcher metrics/review guards and misleading receipt/update text.
+- [x] Pass 58 Flutter tests, clean analysis/format, final Web build, TypeScript, 5 service tests and 1 HTTP regression.
+- [ ] Complete external Chrome automation, full planning/closeout UI matrix, hosted private S3 and physical/release acceptance. Real S3 AccessDenied remains open.
+
+[Dated evidence and screenshots](../waypoint-mobile/docs/role-workflow-verification.md). Phases 2–6 remain **Implemented — verification pending**; Phase 7 remains **In progress**. Full phase exit gates remain **0 / 10**. Flutter web ran in in-app Chromium because external Chrome launch was rejected by automatic approval review; no Android-emulator check is counted for this request. Existing historical entries below retain their original scope and dates.
+
+Last updated: **9 October 2026**. Flutter/Dart, Android first. Driver/Store native; Dispatcher/Loader web. [Executed evidence](../waypoint-mobile/docs/phase-2-7-verification.md), [review/fixes](../waypoint-mobile/docs/mobile-review-and-fixes.md) and [updated development APK](../waypoint-mobile/build/releases/waypoint-0.1.0-development-20261001.apk).
 
 ## Phase progress
 
@@ -98,3 +108,30 @@ Only increment the complete count after the relevant remaining gate passes. Reop
 | 2026-09-30 | Phase 0 review and Phase 1 foundation | [Original evidence](../waypoint-mobile/docs/phase-0-1-verification.md); device/policy gates open |
 | 2026-09-30 | Phase 1 debug APK and native storage check; started Phases 2–7 | Original 24 tests and native storage test; superseded software count below |
 | 2026-09-30 | Implemented Phases 2–6 and Phase 7 local verification/release handoff | 35 Flutter tests, 4 domain tests, 1 live HTTP test, 1 connected Android journey, clean analysis/typecheck/web build, normal installed development APK; physical/hosted/production signing gates remain |
+
+## Connection and Chrome follow-up — 9 October 2026
+
+- [x] Compare mobile login/API/roles with the website; fix API configuration validation, rejected offline grants, role-scoped drafts/caches/cursors and correction access.
+- [x] Add connected Chrome SQLite/WASM and encrypted image storage plus a local-only API proxy; preserve fixture mode.
+- [x] Pass 55 Flutter tests, clean analysis and debug web build. [Evidence and backend discrepancies](../waypoint-mobile/docs/connection-role-verification.md).
+- [x] Verify the real website URL and matching registered Firebase public Web client; the connected preview now uses the real project.
+- [x] Verify in-app Chromium Driver/Store login, both role guards, session reload and retained Store draft; live shared HTTP test and both roles through the local proxy passed.
+- [ ] Complete browser camera/quota/offline and external Chrome-specific acceptance. The earlier domain-test discrepancies are repaired; full operational acceptance remains open.
+
+Phases 1, 2, 4, 5 and 6 remain **Implemented — verification pending**; Phase 7 remains **In progress**. Complete count remains **0 / 10**. No operational database or website source change is part of this follow-up.
+
+### Environment connection follow-up — 9 October 2026
+
+Verified matching real Firebase configuration; removed server secrets from mobile client settings and added a tested public-only defines generator. Google authentication and read-only role/profile checks pass after Windows clock sync. The real-project Chrome build and live API proxy pass. Repaired departure gates and custom-server redirects; 5 service tests, 1 HTTP test, 2 config tests, TypeScript and Flutter analysis pass.
+
+Phases 1–6 remain **Implemented — verification pending**; Phase 7 remains **In progress**. S3 upload returned **403 AccessDenied**; private object permissions/CORS, real-account UI and physical/hosted/release acceptance remain open. [Evidence](../waypoint-mobile/docs/env-connection-verification.md).
+
+### Connected login and UI follow-up — 9 October 2026
+
+- [x] Verify real PC Dispatcher/Loader/Driver/Store login and role guards; verify real mobile Driver/Store login, session restoration and guards.
+- [x] Repair login failure recovery, loopback session redirects, seed authorization, misleading Driver/Store states and catalogue labels/window.
+- [x] Implement PC scoped draft saving and verify reload; retain submission UUID before network access.
+- [x] Remove mobile refresh flicker with scope-bound data retention; pass 57 Flutter tests, clean analysis/format, Web build, TypeScript and isolated HTTP guards.
+- [ ] Resolve S3 AccessDenied; assign legitimate Driver work for operational proof/receipt rehearsal; complete physical/hosted/release checks.
+
+[Actual checks and screenshots](../waypoint-mobile/docs/role-ui-verification.md). Phases 1–6 remain **Implemented — verification pending**; Phase 7 remains **In progress**. Complete count remains **0 / 10**. PC fixes are within the user's explicit request to check both apps. Opening Planning invoked its normal daily draft-plan endpoint; no publish, assignment, order, proof or receipt submission was performed.

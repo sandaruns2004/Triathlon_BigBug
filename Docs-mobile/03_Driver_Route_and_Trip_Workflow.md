@@ -1,5 +1,14 @@
 # Phase 3 — Driver route and trip workflow
 
+## Browser sample workflow follow-up — 9 October 2026
+
+Status: **Implemented — verification pending**. [Actual environment, fixes, checks and screenshots](../waypoint-mobile/docs/role-workflow-verification.md). Mobile ran as Flutter web in in-app Chromium; external Chrome launch was blocked. No Android-emulator acceptance result is counted.
+
+- [x] Browser Driver receives released manifest, starts after parked acknowledgment and shows canonical delivery acceptance; website Driver sees the same progress.
+- [ ] Complete physical/offline route revision and full end-of-trip browser rehearsal.
+
+This evidence extends local connected acceptance; unresolved phase exit gates remain open.
+
 **Execution status (30 September 2026): Implemented — verification pending.** Connected assignment/cache, loading/publication/start gates, safe stop forms, route comparison, breakdown, closeout and server-controlled next-trip eligibility are implemented. Airplane-mode cold starts and navigation on the target physical phone remain unchecked.
 Progress is maintained in [00__Work_List.md](00__Work_List.md) under [the repository rule](../AGENTS.md).
 
@@ -103,3 +112,19 @@ On reconnect, a revoked/reassigned trip creates an explicit conflict; proof is p
 ## Execution evidence and remaining gate
 
 Software/test evidence is recorded in [phase-2-7-verification.md](../waypoint-mobile/docs/phase-2-7-verification.md). The code paths above replace the original proposed helpers. No production deployment, signing credential, physical camera acceptance or human policy approval is claimed. Keep this phase open until its applicable remaining release checks pass.
+
+### Added environment files — 9 October 2026
+
+Status remains **Implemented — verification pending**. [Executed environment/connection evidence](../waypoint-mobile/docs/env-connection-verification.md).
+
+- [x] Restore server departure gates for versions, publication, release, holds, loading, shortfalls and previous assigned trip.
+- [x] Pass isolated backend route journey/replay/authorization checks.
+- [ ] Verify target-phone route/offline/navigation acceptance.
+
+
+### Connected login and UI follow-up — 9 October 2026
+
+Status remains **Implemented — verification pending**. [Actual browser checks and limits](../waypoint-mobile/docs/role-ui-verification.md).
+
+- [x] Verify real Driver empty-route UI and correct date/depot; gate PC Start against server eligibility and distinguish assignment absence from completion. No real trip is assigned today; physical route/start acceptance remains pending.
+- [ ] Complete the phase exit gate with the outstanding operational, physical-device and release checks.

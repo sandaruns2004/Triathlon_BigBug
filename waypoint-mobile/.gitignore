@@ -1,4 +1,7 @@
 # Miscellaneous
+.env
+.env.*
+!.env.example
 *.class
 *.log
 *.pyc
@@ -47,4 +50,5 @@ app.*.map.json
 /config/ios-production.json
 /config/ios-staging.json
 /config/ios-development.local.json
+/config/*.local.json
 /release-ios-checksums.txt

@@ -8,18 +8,24 @@ import { StatusChip } from "@/components/shared/StatusChip";
 
 export default function StoreDashboardPage() {
   const { data: session } = useSession();
+  const userName = (session?.user as any)?.name || "Store Manager";
+  const outletId = (session?.user as any)?.outletId || "Assigned outlet";
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     fetch("/api/store/orders")
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error("Orders unavailable");
+        return res.json();
+      })
       .then(data => {
         setOrders(data.orders || []);
         setLoading(false);
       })
-      .catch(e => {
-        console.error(e);
+      .catch(() => {
+        setError("Cannot load your outlet's orders. Check your connection or sign in again.");
         setLoading(false);
       });
   }, []);
@@ -28,16 +34,18 @@ export default function StoreDashboardPage() {
   const hasReceipt = orders.some(o => o.status === "receipt_confirmed");
   const showHero = hasDelivered || hasReceipt || orders.length > 0;
   
-  const activeOrder = orders.find(o => o.status === "delivered") || 
-                      orders.find(o => o.status === "on_route") || 
+  const activeOrder = orders.find(o => o.status === "on_route") ||
+                      orders.find(o => o.status === "delivered") ||
                       orders[0];
+  if (loading) return <div className="p-8 text-center text-[#6b7870]">Loading your orders…</div>;
 
   return (
     <div className="flex-1 overflow-y-auto px-[22px] pt-[10px] pb-[24px]">
       <div className="mb-[23px]">
         <div className="text-[10px] tracking-[1.6px] uppercase font-[700] text-[#6b7870]">YOUR STORE, CONNECTED</div>
-        <h1 className="text-[28px] leading-[1.2] tracking-[-1px] font-[650] my-[8px]">Good morning, Store Manager</h1>
-        <p className="text-[13px] text-[#6b7870] leading-[1.55]">Fresh · Nugegoda</p>
+        <h1 className="text-[28px] leading-[1.2] tracking-[-1px] font-[650] my-[8px]">Welcome, {userName}</h1>
+        <p className="text-[13px] text-[#6b7870] leading-[1.55]">{outletId} · Connected outlet</p>
+        {error && <p role="status" className="mt-3 text-sm text-[#ae483a]">{error}</p>}
       </div>
 
       {showHero && activeOrder && (
@@ -46,15 +54,15 @@ export default function StoreDashboardPage() {
           
           <div className="relative z-10">
             <div className="flex justify-between items-start">
-              <div className="text-[#acd0bb] text-[10px] font-bold uppercase tracking-[1.6px]">TODAY'S DELIVERY</div>
+              <div className="text-[#acd0bb] text-[10px] font-bold uppercase tracking-[1.6px]">DELIVERY STATUS</div>
               <span className="inline-flex items-center gap-[5px] rounded-[6px] px-[8px] py-[5px] text-[10px] font-[650] bg-white/10 text-[#e8f5e9] border border-white/20 whitespace-nowrap">
-                <Check size={12} /> {activeOrder.status === "receipt_confirmed" ? "Received" : activeOrder.status === "delivered" ? "Delivered" : "Pending"}
+                <Check size={12} /> {activeOrder.status === "receipt_confirmed" ? "Received" : activeOrder.status === "delivered" ? "Delivered" : activeOrder.status === "on_route" ? "On route" : "Pending"}
               </span>
             </div>
             
             <div className="flex items-center gap-[12px] min-h-[82px] mt-[12px]">
               <h2 className="flex-1 min-w-0 m-0 text-[27px] leading-[1.2] font-[650] tracking-tight">
-                {activeOrder.status === "receipt_confirmed" ? "All received." : activeOrder.status === "delivered" ? "Your order is here." : "Awaiting delivery."}
+                {activeOrder.status === "receipt_confirmed" ? "Receipt confirmed." : activeOrder.status === "delivered" ? "Delivery recorded." : "Awaiting delivery."}
               </h2>
             </div>
             
@@ -76,7 +84,7 @@ export default function StoreDashboardPage() {
 
             <Link href={`/store/orders/${activeOrder.orderId}`} className="w-full bg-white text-[#146b45] font-semibold text-[14px] h-[48px] rounded-[9px] flex items-center justify-center gap-[9px] hover:bg-[#f0f6f1] transition-colors">
               {activeOrder.status === "receipt_confirmed" ? <Truck size={20} /> : <Box size={20} />}
-              {activeOrder.status === "receipt_confirmed" ? "View delivery" : "Check & confirm receipt"}
+              {activeOrder.status === "receipt_confirmed" ? "View delivery" : activeOrder.proofId ? "Check & confirm receipt" : "View order"}
               <ChevronRight size={18} />
             </Link>
           </div>

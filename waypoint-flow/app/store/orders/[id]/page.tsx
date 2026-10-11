@@ -71,8 +71,10 @@ export default function StoreOrderPage() {
     }
   }
 
-  const isDelivered = ["delivered", "partial"].includes(order?.status);
+  const isDelivered = ["delivered", "partial", "receipt_confirmed"].includes(order?.status) || !!order?.receiptId;
   const isReceiptConfirmed = !!order?.receiptId;
+  const orderedLine = (lineId: string) => (order?.orderedLines ?? order?.lines ?? []).find((line: any) => line.lineId === lineId);
+  const hasDifference = (order?.deliveredLines ?? []).some((line: any) => qty[line.lineId] !== line.deliveredQty);
 
   return (
     <div className="flex flex-col h-full bg-[#f6f8f7] px-[22px] pt-[10px]">
@@ -82,7 +84,7 @@ export default function StoreOrderPage() {
         <Link href="/store" className="bg-transparent border-none p-2 -ml-[12px] text-[#17221d]">
           <ArrowLeft size={24} strokeWidth={2.5} />
         </Link>
-        <h1 className="text-[22px] font-[650] tracking-tight m-0">Order {String(id).split("-")[0]}-{String(id).split("-")[1]?.substring(0, 6).toUpperCase()}</h1>
+        <h1 className="text-[22px] font-[650] tracking-tight m-0">Order {String(id)}</h1>
       </div>
 
       {!order ? (
@@ -94,11 +96,11 @@ export default function StoreOrderPage() {
           </span>
           
           <h1 className="text-[25px] font-[650] tracking-tight my-[10px] leading-[1.2]">
-            {isReceiptConfirmed ? "All received." : isDelivered ? "Your delivery is here." : "Your order is processing."}
+            {isReceiptConfirmed ? (note?.discrepancy ? "Receipt confirmed with differences." : "Receipt confirmed.") : isDelivered ? "Your delivery is here." : "Your order is processing."}
           </h1>
           <p className="text-[13px] text-[#6b7870] leading-[1.5]">
-            Fresh · Nugegoda · {order.requestedDate ?? order.planDate} <br/>
-            {isDelivered && "Delivered to rear receiving bay"}
+            {order.brand} · {order.outletName ?? order.outletId} · {order.requestedDate ?? order.planDate} <br/>
+            {isDelivered && "Delivery recorded by driver"}
             {order.tracking && !isDelivered && `Trip: ${order.tracking.status} · vehicle ${order.tracking.vehicleId}`}
           </p>
 
@@ -163,8 +165,8 @@ export default function StoreOrderPage() {
                   <tbody>
                     {(order.deliveredLines ?? []).map((l: any) => (
                       <tr key={l.lineId} className="border-t border-[#dce5df]">
-                        <td className="py-[14px] font-[600]">{l.name || l.lineId}</td>
-                        <td className="py-[14px] px-2 text-[#6b7870]">{l.deliveredQty}</td>
+                        <td className="py-[14px] font-[600]">{l.name || orderedLine(l.lineId)?.name || l.lineId}</td>
+                        <td className="py-[14px] px-2 text-[#6b7870]">{orderedLine(l.lineId)?.quantity ?? "—"}</td>
                         <td className="py-[14px] px-2 text-[#6b7870]">{l.deliveredQty}</td>
                         <td className="py-[14px] px-2">
                           <input 
@@ -194,11 +196,11 @@ export default function StoreOrderPage() {
 
               <div className="grid gap-[10px] mb-[20px]">
                 <button 
-                  disabled={busy} 
+                  disabled={busy || (hasDifference && !reason.trim())}
                   onClick={receipt} 
                   className="w-full bg-[#146b45] text-white font-semibold text-[14px] h-[48px] rounded-[12px]"
                 >
-                  Confirm all items received
+                  {hasDifference ? "Confirm receipt with differences" : "Confirm all items received"}
                 </button>
                 <button 
                   disabled={busy || !reason.trim()} 
@@ -222,7 +224,7 @@ export default function StoreOrderPage() {
                     <h3 className="text-[12px] font-[700] uppercase tracking-wide text-[#6b7870] mb-[8px]">{key.replace("Lines", "")}</h3>
                     {(note[key] ?? []).map((l: any) => (
                       <div key={l.lineId} className="flex justify-between py-[8px] border-b border-[#f0f3f1] last:border-0 text-[13px]">
-                        <span>{l.lineId}</span>
+                        <span>{l.name || orderedLine(l.lineId)?.name || l.lineId}</span>
                         <strong className="font-[650]">{l.quantity ?? l.deliveredQty ?? l.receivedQty} {l.unit}</strong>
                       </div>
                     ))}

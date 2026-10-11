@@ -211,8 +211,9 @@ class ConnectedRoutePage extends ConsumerWidget {
               ),
               if (trip == null)
                 const EmptyState(
-                  title: 'No downloaded assignment',
-                  message: 'Connect to receive an assigned route.',
+                  title: 'No assigned route for today',
+                  message:
+                      'Operations will assign your route. Saved proof remains in Activity.',
                 )
               else ...[
                 StatusChip(

@@ -50,7 +50,15 @@ export function requireVersion(actual: unknown, expected: unknown, name: string)
 }
 export function validateStart(principal: Principal, trip: RecordData, stops: RecordData[], op: Operation, priorTrip?: RecordData) {
   assertTripOwner(principal, trip);
-  // Hackathon demo: relaxed strict loading and release checks to allow immediate starts
+  requireVersion(trip.assignmentVersion, op.concurrency.assignmentVersion, "Assignment");
+  requireVersion(trip.releaseVersion, op.concurrency.releaseVersion, "Release");
+  ensure(trip.status === "ready_to_depart" && trip.released === true && !trip.held,
+    409, "start_not_ready", "Operations must release the loaded route and resolve holds before departure.");
+  ensure(stops.length > 0 && stops.every(stop => stop.loadingState === "loaded" && !stop.shortfallOpen),
+    409, "loading_incomplete", "Every active stop must be loaded and shortfalls resolved before departure.");
+  ensure((trip.tripNumber ?? 1) === 1 || (priorTrip?.status === "completed" &&
+    priorTrip.driverId === principal.userId && priorTrip.depot === principal.depot),
+    409, "previous_trip_incomplete", "Complete the previous assigned trip before starting this route.");
 }
 const outcomeSchema = z.enum(["full", "partial", "failed", "refused", "skipped"]);
 export const deliveredLineSchema = z.object({ lineId: id, deliveredQty: z.number().int().nonnegative(), unit: z.string().min(1).max(20), reason: z.string().max(500).default("") }).strict();

@@ -1,5 +1,15 @@
 # Phase 5 — Store ordering, tracking and receipt
 
+## Browser sample workflow follow-up — 9 October 2026
+
+Status: **Implemented — verification pending**. [Actual environment, fixes, checks and screenshots](../waypoint-mobile/docs/role-workflow-verification.md). Mobile ran as Flutter web in in-app Chromium; external Chrome launch was blocked. No Android-emulator acceptance result is counted.
+
+- [x] Fix shared order-envelope decoding and encrypted offline cache recovery; regression passes. Recheck mobile order detail and digital note after reload.
+- [x] Submit one-case browser mobile order and receive canonical order ID; website receipt discrepancy and matching mobile digital note verified.
+- [ ] Complete physical/offline receipt and hosted media acceptance.
+
+This evidence extends local connected acceptance; unresolved phase exit gates remain open.
+
 **Execution status (30 September 2026): Implemented — verification pending.** Connected catalogue/order drafts, tracking/deferral/restoration, receipts/issues and scoped digital notes/photos are implemented. Complete the target-phone and hosted same-order planning-to-receipt rehearsal.
 Progress is maintained in [00__Work_List.md](00__Work_List.md) under [the repository rule](../AGENTS.md).
 
@@ -105,3 +115,29 @@ The full report promises a digital delivery note after receiving goods. Include 
 ## Execution evidence and remaining gate
 
 Software/test evidence is recorded in [phase-2-7-verification.md](../waypoint-mobile/docs/phase-2-7-verification.md). The code paths above replace the original proposed helpers. No production deployment, signing credential, physical camera acceptance or human policy approval is claimed. Keep this phase open until its applicable remaining release checks pass.
+
+## Connection and role review — 9 October 2026
+
+**Status: Implemented — verification pending.** [Executed evidence and limitations](../waypoint-mobile/docs/connection-role-verification.md).
+
+- [x] Implement the relevant connection/role changes: validated mobile API URL, invalidated rejected offline grants, scope-bound drafts/caches/notification cursors and correction access; add connected Chrome durable storage/media adapter.
+- [x] Run 55 Flutter tests, clean analysis and compile the connected debug web build.
+- [x] Verify in-app Chromium Driver/Store sign-in, role-route guards, session restoration and local Store draft reload; the existing shared HTTP test passed under the standard Next.js launcher.
+- [x] Verify matching real website/Firebase configuration and connected browser login; see the later environment and role/UI evidence below.
+- [ ] Verify browser media/quota/offline and external-Chrome acceptance.
+- [x] Repair the recorded backend gate/test discrepancies; 5 service tests and the isolated HTTP journey pass in the later environment evidence.
+- [ ] Retain physical-device, hosted and release acceptance gates.
+### Added environment files — 9 October 2026
+
+Status remains **Implemented — verification pending**. [Executed environment/connection evidence](../waypoint-mobile/docs/env-connection-verification.md).
+
+- [x] Correct isolated restoration setup to perform deferral before restoration; backend Store creation/amendment/restoration tests pass.
+- [ ] Rehearse the real Store ordering-to-receipt workflow.
+
+
+### Connected login and UI follow-up — 9 October 2026
+
+Status remains **Implemented — verification pending**. [Actual browser checks and limits](../waypoint-mobile/docs/role-ui-verification.md).
+
+- [x] Verify connected mobile catalogue/review and retained draft; implement and verify PC account/outlet draft reload, shared handling/window and explicit submission label. No real order/receipt was submitted; uncertain-response PC retry UUID persistence is implemented but not exercised with a real submission.
+- [ ] Complete the phase exit gate with the outstanding operational, physical-device and release checks.

@@ -1,36 +1,58 @@
 "use client";
+import {useCallback, useEffect, useState} from "react";
 import Link from "next/link";
-import { Bell, ArrowRight } from "lucide-react";
+import {api} from "@/lib/mobile/browser";
 
+type Update = {notificationId:string;entityId:string;message:string;createdAt:string;sequence:number;read:boolean};
 export default function StoreUpdatesPage() {
-  return (
-    <div className="flex-1 overflow-y-auto px-[22px] pt-[10px] pb-[24px]">
-      <div className="mb-[23px]">
-        <div className="text-[10px] tracking-[1.6px] uppercase font-[700] text-[#6b7870]">NOTIFICATIONS</div>
-        <h1 className="text-[28px] leading-[1.2] tracking-[-1px] font-[650] my-[8px]">Store updates</h1>
-        <p className="text-[13px] text-[#6b7870] leading-[1.55]">The latest on your deliveries.</p>
-      </div>
-
-      <div className="flex flex-col gap-[15px]">
-        <Link href="/store/orders" className="bg-white border border-[#dce5df] rounded-[14px] p-[18px] block hover:opacity-80">
-          <div className="flex justify-between items-start mb-[8px]">
-            <h3 className="text-[14px] font-[650]">Delivery ready to receive</h3>
-            <span className="inline-flex items-center gap-[5px] rounded-[6px] px-[8px] py-[5px] text-[10px] font-[650] bg-[#eaf6ef] text-[#146b45] whitespace-nowrap">
-              New
-            </span>
-          </div>
-          <p className="text-[12px] text-[#6b7870] leading-[1.5]">
-            An order arrived at your receiving bay. Check the quantities and confirm receipt.
-          </p>
-        </Link>
-
-        <div className="bg-white border border-[#dce5df] rounded-[14px] p-[18px]">
-          <h3 className="text-[14px] font-[650] mb-[8px]">Tomorrow's order cut-off</h3>
-          <p className="text-[12px] text-[#6b7870] leading-[1.5]">
-            Send your order by 4:00 PM today to be included in tomorrow's planning cycle.
-          </p>
-        </div>
-      </div>
-    </div>
-  );
+  const [updates,setUpdates] = useState<Update[]>([]);
+  const [error,setError] = useState("");
+  const [loading,setLoading] = useState(true);
+  const [busy,setBusy] = useState(false);
+  const [cursor,setCursor] = useState<string|null>(null);
+  const [hasMore,setHasMore] = useState(false);
+  const refresh = useCallback(async () => {
+    try {
+      const result = await api("notifications");
+      setUpdates(result.notifications);
+      setCursor(result.cursor);
+      setHasMore(result.hasMore);
+      setError("");
+    } catch(e) {setError((e as Error).message);}
+    finally {setLoading(false);}
+  },[]);
+  useEffect(() => {void refresh();},[refresh]);
+  async function more() {
+    if(busy || !cursor) return;
+    setBusy(true);
+    try {
+      const result = await api("notifications?after="+encodeURIComponent(cursor));
+      setUpdates(old => [...new Map([...old,...result.notifications].map((n:Update) => [n.notificationId,n])).values()]);
+      setCursor(result.cursor);setHasMore(result.hasMore);setError("");
+    } catch(e) {setError((e as Error).message);}
+    finally {setBusy(false);}
+  }
+  async function markRead(id:string) {
+    if(busy) return;
+    setBusy(true);
+    try {
+      await api("notifications/"+encodeURIComponent(id)+"/read",{method:"POST",body:"{}"});
+      setUpdates(old => old.map(n => n.notificationId === id ? {...n,read:true} : n));setError("");
+    } catch(e) {setError((e as Error).message);}
+    finally {setBusy(false);}
+  }
+  return <div className="flex-1 overflow-y-auto px-[22px] pt-[10px] pb-[24px]">
+    <h1 className="text-[28px] font-semibold my-4">Store updates</h1>
+    <p className="text-sm text-wp-muted mb-4">Committed updates for your outlet. Refresh to check for new activity.</p>
+    <button onClick={refresh} disabled={busy} className="btn btn-outline mb-4">Refresh updates</button>
+    {error && <p role="alert" className="mb-4 text-red-700">{error}</p>}
+    {loading ? <p>Loading updates…</p> : updates.length === 0 ? <p>No updates for your outlet yet.</p> :
+      [...updates].sort((a,b) => b.sequence-a.sequence).map(n => <section key={n.notificationId} className="card-panel p-4 mb-4">
+        <p className="font-semibold">{n.message}</p>
+        <p className="text-sm text-wp-muted">{new Date(n.createdAt).toLocaleString("en-GB",{timeZone:"Asia/Colombo"})} · {n.read ? "Read" : "New"}</p>
+        <Link href="/store/orders" className="text-wp-action">View your orders</Link>
+        {!n.read && <button disabled={busy} onClick={() => markRead(n.notificationId)} className="btn btn-outline ml-3">Mark read</button>}
+      </section>)}
+    {hasMore && <button disabled={busy} onClick={more} className="btn btn-outline">Load more updates</button>}
+  </div>;
 }

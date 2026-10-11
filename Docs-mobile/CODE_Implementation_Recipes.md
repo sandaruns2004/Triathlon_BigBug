@@ -1,5 +1,11 @@
 # Tricky implementation recipes — Waypoint mobile
 
+## Explicit Loader release and shared order envelope — implemented 9 October
+
+[loadStop/releaseTrip/resolveShortfall](../waypoint-flow/lib/mobile/operations.ts) now separate manifest loading from departure. Loading or approving a shortfall sets `released: false`; only `releaseTrip` validates four literal-true confirmations, complete active manifests, depot and absence of holds, then records release actor/time/version in one transaction. Retrying an already released ready trip leaves the version unchanged. [Loader UI](../waypoint-flow/components/loader/TripLoaderPanel.tsx), [HTTP regressions](../waypoint-flow/tests/mobile-http.test.ts) and [service tests](../waypoint-flow/tests/mobile-service.test.ts) use this implemented contract. The emulator preparation script's confirmations are synthetic, not a real inspection.
+
+[OperationalRepository](../waypoint-mobile/lib/core/data/operational_repository.dart) normalizes only exact `store/orders/:id` reads from `{order, exceptions}` to the flat order expected by mobile screens before caching and during offline recovery. Collection and delivery-note responses retain their own contracts. [Regression](../waypoint-mobile/test/network/connection_role_test.dart) runs HTTP JSON decoding followed by encrypted offline cache recovery. [Browser acceptance](../waypoint-mobile/docs/role-workflow-verification.md) records the original crash and successful corrected detail/note screens.
+
 Updated: **1 October 2026**. Read alongside the [work list](00__Work_List.md). These examples explain the hard parts of each phase; they do not replace its acceptance checks.
 
 ## Implemented fixture workflow guard
@@ -221,3 +227,20 @@ const deviceSecureStorage = FlutterSecureStorage(
 # UI account hierarchy and sync summary — implemented
 
 The reusable `AccountSummaryCard` and framed Store illustration are implemented in [foundation_pages.dart](../waypoint-mobile/lib/features/foundation/foundation_pages.dart). Connected Profile reuses that card in [profile_notifications.dart](../waypoint-mobile/lib/features/connected/profile_notifications.dart). [sync_pages.dart](../waypoint-mobile/lib/features/connected/sync_pages.dart) derives summary counts from actual operation rows while preserving individual review/retry actions. [Verification](../waypoint-mobile/docs/ui-polish-verification.md) records 50 passing tests and the remaining native visual gate.
+
+## Connection and scope safeguards — 9 October 2026
+
+Implemented in [AppConfig](../waypoint-mobile/lib/app/environment.dart), [authentication](../waypoint-mobile/lib/core/auth/authentication_repository.dart), [OperationalRepository](../waypoint-mobile/lib/core/data/operational_repository.dart) and [regressions](../waypoint-mobile/test/network/connection_role_test.dart).
+
+The API URL ends in `/api/mobile/v1/`; Firebase custom tokens must be exchanged against the same project used by the website server. `/me` decides the native role. A 401/403 invalidates the offline grant and SDK session, preserving evidence. Saved forms carry `ownerScope` and cannot be reopened/overwritten after a depot/outlet/role change. Legacy unscoped forms are retained for review, with only explicitly outlet-keyed carts eligible for recovery.
+
+[Browser storage](../waypoint-mobile/lib/core/storage/storage_runtime_web.dart) opens Drift WASM using checked-in version-matched worker/SQLite assets, refusing in-memory and unsafe multi-tab fallback. [Browser media](../waypoint-mobile/lib/core/storage/web_media_store.dart) copies image blobs into encrypted LocalStore records before returning success. These are implemented adapters; actual browser camera/quota/reload acceptance is still pending. [Run instructions](../waypoint-mobile/README.md) and [dated evidence](../waypoint-mobile/docs/connection-role-verification.md) distinguish the test database from the unconfigured real website.
+### Public environment defines — implemented 9 October 2026
+
+[Generator](../waypoint-mobile/scripts/configure-connected.mjs) and [tests](../waypoint-mobile/scripts/configure-connected.test.mjs) explicitly allowlist public client settings, check website project/API-key equality and validate Web app/sender/endpoint fields. Never pass the server `.env` directly to Flutter `--dart-define-from-file`; use the generated ignored `config/chrome-connected.local.json`. [Launch and verification](../waypoint-mobile/docs/env-connection-verification.md).
+
+## Connected UI refresh and PC drafts — implemented 9 October
+
+Mobile read queries use `ScopedReadKey` (query plus user/role/depot/outlet/auth version/Firebase UID) in [connected_pages.dart](../waypoint-mobile/lib/features/connected/connected_pages.dart). `RemoteContent` retains data during same-scope reloads, while a workspace change selects a new provider and hides prior data. [connected_refresh_test.dart](../waypoint-mobile/test/widgets/connected_refresh_test.dart) verifies both behaviors.
+
+PC Store [orders/new/page.tsx](../waypoint-flow/app/store/orders/new/page.tsx) persists schema-1 cart/date drafts keyed by project/account/outlet/auth version. It persists the original operation envelope before submission and reuses its UUID for uncertain retries. Only a definitive correctable server rejection unlocks a new correction. Draft reload was verified in Chromium; interrupted real submission remains an acceptance check. This browser cart storage contains no password, token, signing key or private photo; native encrypted offline storage remains a separate implementation.

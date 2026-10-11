@@ -64,7 +64,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       if (stopsByTrip[trip.tripId]) {
         trip.orders = stopsByTrip[trip.tripId].sort((a, b) => a.stopOrder - b.stopOrder);
         // Attempt to get district from trip if possible
-        trip.orders.forEach(o => o.district = trip.district || o.district);
+        trip.orders.forEach((o: any) => o.district = trip.district || o.district);
       } else {
         trip.orders = [];
       }

@@ -55,7 +55,7 @@ export function LoaderShell({ children }: LoaderShellProps) {
         <div className="flex items-center gap-[15px]">
           <span className="hidden md:flex items-center gap-[6px] text-[10px] text-[#146b45] border border-[#d8eadf] bg-[#f2faf5] px-[8px] py-[4px] rounded-[5px]">
             <span className="w-[6px] h-[6px] bg-[#1f8a5b] rounded-full inline-block"></span>
-            Demo data
+            Connected account
           </span>
 
           <div className="w-[1px] h-[20px] bg-[#dce5df] hidden sm:block"></div>

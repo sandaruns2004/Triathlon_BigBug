@@ -1,5 +1,6 @@
 const {createServer}=require("http");
 const next=require("next");
+const {parse}=require("node:url");
 const dev=process.env.NODE_ENV!=="production";
 const hostname=process.env.HOSTNAME||"127.0.0.1";
 const port=Number(process.env.PORT||3000);
@@ -8,7 +9,7 @@ app.prepare().then(()=>{
   // MVP uses authorized API polling. No anonymous rooms or client-forwarded events.
   const server=createServer(async(req,res)=>{
     try{
-      const parsedUrl=new URL(req.url,`http://${req.headers.host}`);
+      const parsedUrl=parse(req.url,true);
       await handle(req,res,parsedUrl);
     }catch{res.statusCode=500;res.end("Server unavailable");}
   });

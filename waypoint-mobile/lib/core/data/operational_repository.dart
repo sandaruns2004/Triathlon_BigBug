@@ -17,6 +17,16 @@ class OperationalRepository {
   final LocalStore store;
   final Principal? Function() currentPrincipal;
   bool usingCache = false;
+  Map<String, dynamic> _readData(String path, Map<String, dynamic> data) {
+    // The shared order endpoint includes exceptions beside the order. Keep
+    // screen/cache contracts consistent with earlier flat order responses.
+    if (RegExp(r'^store/orders/[^/]+$').hasMatch(path) &&
+        data['order'] is Map) {
+      return Map<String, dynamic>.from(data['order'] as Map);
+    }
+    return data;
+  }
+
   bool authorized(Principal principal) {
     final current = currentPrincipal();
     return current?.userId == principal.userId &&
@@ -36,7 +46,7 @@ class OperationalRepository {
     LocalTable table = LocalTable.orders,
   }) async {
     cacheId =
-        '${principal.role.name}/${principal.outletId ?? principal.depot}/$cacheId';
+        '${principal.role.name}/${principal.depot}/${principal.outletId}/$cacheId';
     if (!authorized(principal)) {
       throw StateError('Sign in again. Saved work is retained.');
     }
@@ -45,7 +55,7 @@ class OperationalRepository {
       if (!authorized(principal)) {
         throw StateError('Account changed during refresh.');
       }
-      final data = response.data!;
+      final data = _readData(path, response.data!);
       final savedAt = DateTime.now().toUtc();
       await store.db.transaction(() async {
         if (path == 'driver/trips') {
@@ -93,7 +103,7 @@ class OperationalRepository {
       }
       usingCache = true;
       return CachedRead(
-        cache['data'] as Map<String, dynamic>,
+        _readData(path, cache['data'] as Map<String, dynamic>),
         DateTime.parse(cache['savedAt'] as String),
         fromCache: true,
       );
@@ -105,9 +115,46 @@ class OperationalRepository {
     String id,
     String entityId,
     Map<String, dynamic> fields,
-  ) => store.write(LocalTable.drafts, principal.userId, id, entityId, fields);
-  Future<Map<String, dynamic>?> loadForm(Principal principal, String id) =>
-      store.read(LocalTable.drafts, principal.userId, id);
+  ) async {
+    // Disposal can finish a save for its captured owner after sign-out.
+    // Never let a new scope overwrite retained proof from an earlier scope.
+    final previous = await store.read(LocalTable.drafts, principal.userId, id);
+    if (previous?['ownerScope'] != null &&
+        !operationScopeMatches(previous!, principal)) {
+      throw StateError(
+        'This saved form belongs to an earlier account scope. Contact operations.',
+      );
+    }
+    await store.write(LocalTable.drafts, principal.userId, id, entityId, {
+      ...fields,
+      'ownerScope': {
+        'role': principal.role.name,
+        'depot': principal.depot,
+        'outletId': principal.outletId,
+      },
+    });
+  }
+
+  Future<Map<String, dynamic>?> loadForm(Principal principal, String id) async {
+    if (!authorized(principal)) {
+      throw StateError('Sign in again to open saved work.');
+    }
+    final saved = await store.read(LocalTable.drafts, principal.userId, id);
+    if (saved == null) return null;
+    // Legacy carts already encode their outlet in their key. Other legacy
+    // forms have no provable scope and remain retained for operations recovery.
+    final legacyCart =
+        saved['ownerScope'] == null &&
+        principal.role == MobileRole.store &&
+        id == 'cart/${principal.outletId}';
+    if (!legacyCart && !operationScopeMatches(saved, principal)) {
+      throw StateError(
+        'This saved form needs an account-scope review. Contact operations; saved work is retained.',
+      );
+    }
+    return saved;
+  }
+
   Future<List<Map<String, dynamic>>> operations(Principal principal) async =>
       (await store.list(
         principal.userId,
@@ -139,10 +186,12 @@ class OperationalRepository {
 
   Future<void> refreshNotifications(Principal principal) async {
     if (!authorized(principal)) return;
+    final checkpointId =
+        'notifications/${principal.role.name}/${principal.depot}/${principal.outletId}';
     final checkpoint = await store.read(
       LocalTable.checkpoints,
       principal.userId,
-      'notifications',
+      checkpointId,
     );
     var cursor = checkpoint?['cursor'] as String?;
     for (var page = 0; page < 20; page++) {
@@ -165,7 +214,7 @@ class OperationalRepository {
         await store.write(
           LocalTable.checkpoints,
           principal.userId,
-          'notifications',
+          checkpointId,
           'notifications',
           {'cursor': result['cursor']},
         );

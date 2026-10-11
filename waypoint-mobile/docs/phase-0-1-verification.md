@@ -1,5 +1,9 @@
 # Phase 0–1 verification record
 
+## Browser workflow verification — 9 October 2026
+
+[Detailed verification](role-workflow-verification.md) records final 58 passing Flutter tests, clean analysis and 54-file zero-change format check. Corrected debug Web build passed and was retested through the local same-origin API proxy. Builds/tests used `C:/wf-mobile-qa-20261009` after OneDrive denied access to existing build/hook files; formatted edited sources/tests were copied back. Original-repository formatting and final diff checks passed. Mobile ran in in-app Chromium; external Chrome launch was blocked, and no Android-emulator, physical-device or production release result is counted.
+
 ## Environment
 
 Flutter 3.41.5 stable, Dart 3.11.3; installed Android SDK 36.1.0 and Java 21.0.9. No physical Android device was connected during initial inspection. The available Medium_Phone emulator is a software test target only.
@@ -40,3 +44,8 @@ Local Java build required a short existing `jdk.net.unixdomain.tmpdir` and the W
 6. Test keystore/key restore failure, low-storage recovery and backup exclusions on the target OS.
 
 No connected authentication, POD, order submission, live upload or production release is claimed by Phase 1.
+
+
+## Connected role/UI follow-up — 9 October 2026
+
+[Executed real-account browser checks, fixes, 57-test result and remaining gates](role-ui-verification.md). This supersedes earlier pending real-account browser checks; S3, physical-device, hosted and release acceptance remain open.

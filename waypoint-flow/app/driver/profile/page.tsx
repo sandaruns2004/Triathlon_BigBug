@@ -7,6 +7,7 @@ export default function DriverProfilePage() {
   const { data: session } = useSession();
   const userName = (session?.user as any)?.name || "Driver";
   const email = (session?.user as any)?.email || "driver@waypoint.lk";
+  const depot = (session?.user as any)?.depot || "Assigned depot";
 
   return (
     <div className="flex-1 overflow-y-auto px-[22px] pt-[10px] pb-[24px]">
@@ -21,9 +22,9 @@ export default function DriverProfilePage() {
         </div>
         <div>
           <h2 className="text-[18px] font-[650]">{userName}</h2>
-          <p className="text-[13px] text-[#6b7870]">Driver · Peliyagoda depot</p>
+          <p className="text-[13px] text-[#6b7870]">Driver · {depot} depot</p>
           <span className="inline-flex items-center mt-[8px] gap-[5px] rounded-[6px] px-[8px] py-[5px] text-[10px] font-[650] bg-[#edf1ed] text-[#6b7870] whitespace-nowrap">
-            Demo account
+            Connected account
           </span>
         </div>
       </div>
@@ -57,8 +58,8 @@ export default function DriverProfilePage() {
       </div>
 
       <p className="text-[11px] text-[#6b7870] text-center leading-[1.6]">
-        Waypoint Flow · Mobile prototype <br/>
-        Version 2026.1.0-alpha
+        Waypoint Flow · Connected operations <br/>
+        Routes and delivery records use the shared service.
       </p>
     </div>
   );

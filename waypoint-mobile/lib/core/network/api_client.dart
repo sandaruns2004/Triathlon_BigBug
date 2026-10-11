@@ -14,7 +14,7 @@ class ApiClient {
   ApiClient(AppConfig config, TokenSource tokens)
     : dio = Dio(
         BaseOptions(
-          baseUrl: config.apiBaseUrl.toString(),
+          baseUrl: config.apiEndpoint,
           connectTimeout: const Duration(seconds: 15),
           receiveTimeout: const Duration(seconds: 20),
           headers: {'Accept': 'application/json'},
@@ -23,11 +23,25 @@ class ApiClient {
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
-          final expectedUser =
-              options.extra['expectedUserId'] ??
-              (tokens is RefreshableTokenSource ? tokens.currentUserId : null);
+          final expectedUser = options.extra.containsKey('expectedUserId')
+              ? options.extra['expectedUserId']
+              : (tokens is RefreshableTokenSource
+                    ? tokens.currentUserId
+                    : null);
           options.extra['expectedUserId'] = expectedUser;
-          final token = await tokens.idToken();
+          String? token;
+          try {
+            token = await tokens.idToken();
+          } catch (error) {
+            handler.reject(
+              DioException(
+                requestOptions: options,
+                type: DioExceptionType.unknown,
+                error: error,
+              ),
+            );
+            return;
+          }
           if (token == null ||
               (tokens is RefreshableTokenSource &&
                   expectedUser != tokens.currentUserId)) {
